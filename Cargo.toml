@@ -1,0 +1,12 @@
+[package]
+name = "editor"
+version = "0.1.0"
+authors = ["Matt Hunzinger <matthunz2@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+dioxus = { git = "https://github.com/dioxuslabs/dioxus" }
+dioxus-web = { git = "https://github.com/dioxuslabs/dioxus" }
+log = "0.4.19"
+dioxus-logger = "0.4.1"
+console_error_panic_hook = "0.1.7"

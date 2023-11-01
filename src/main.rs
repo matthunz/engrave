@@ -14,16 +14,22 @@ fn main() {
 }
 
 fn app(cx: Scope) -> Element {
-    let editor = use_signal(cx, || Editor::new("fn main() {}"));
+    let editor = use_signal(cx, || Editor::new(include_str!("lib.rs")));
     let cursor = use_signal(cx, || Point::new(0, 0));
 
     let spans = editor().spans().into_iter().map(|span| {
         let color = match span.kind.as_deref() {
-            Some("fn") => "red",
+            Some(s) => match s {
+                "fn" | "struct" | "pub" => "#cc241d",
+                "identifier" => "#427b58",
+                "(" | ")" => "#8f3f71",
+                "{" | "}" => "#076678",
+                _ => "#000",
+            },
             _ => "#000",
         };
         render!(
-            span { color: color, span.text }
+            span { color: color, "data-kind": "{span.kind.unwrap_or_default()}", span.text }
         )
     });
 

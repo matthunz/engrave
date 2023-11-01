@@ -2,6 +2,7 @@ use lazy_static::lazy_static;
 use ropey::Rope;
 use std::mem;
 use tree_sitter_c2rust::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, Tree};
+use tree_sitter_rust::HIGHLIGHT_QUERY;
 
 #[derive(Debug)]
 pub struct Span {
@@ -70,21 +71,17 @@ impl Editor {
 
     pub fn highlights(&self) -> Vec<Item> {
         lazy_static! {
-            static ref QUERY: Query = Query::new(
-                tree_sitter_rust::language(),
-                r#"
-                    ["fn" "for" "while"] @keyword
-                "#,
-            )
-            .unwrap();
+            static ref QUERY: Query =
+                Query::new(tree_sitter_rust::language(), HIGHLIGHT_QUERY).unwrap();
         }
 
         let mut query_cursor = QueryCursor::new();
         let rope = &self.rope;
         let matches = query_cursor.matches(&QUERY, self.tree.root_node(), move |node: Node| {
-            rope.byte_slice(node.start_byte()..node.end_byte())
-                .chunks()
-                .map(move |chunk| chunk.as_bytes())
+            rope.get_byte_slice(node.start_byte()..node.end_byte())
+                .map(|slice| slice.chunks().map(move |chunk| chunk.as_bytes()))
+                .into_iter()
+                .flatten()
         });
         matches
             .flat_map(|mat| {

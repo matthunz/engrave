@@ -5,7 +5,7 @@ use tree_sitter_c2rust::Point;
 
 #[component]
 pub fn Editor(cx: Scope) -> Element {
-    let editor = use_signal(cx, || Buffer::new(include_str!("../example.rs")));
+    let editor = use_signal(cx, || Buffer::new(include_str!("editor.rs")));
     let container_ref = use_signal(cx, || None);
 
     let cursor = use_signal(cx, || Point::new(0, 0));
@@ -97,7 +97,7 @@ fn Line(cx: Scope, spans: Vec<Span>, is_selected: bool) -> Element {
 #[component]
 fn LineSpan(cx: Scope, span: Span) -> Element {
     let color = match span.kind.as_deref() {
-        Some(s) => match s {
+        Some(s) => match &**s {
             "fn" | "struct" | "pub" | "let" | "match" => "rgb(207, 34, 46)",
             "identifier" => "#427b58",
             "attribute_item" | "type_identifier" => "rgb(96, 59, 179)",

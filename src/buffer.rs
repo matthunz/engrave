@@ -1,15 +1,24 @@
 use lazy_static::lazy_static;
 use ropey::Rope;
-use std::mem;
+use std::{mem, rc::Rc};
 use tree_sitter_c2rust::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, Tree};
 use tree_sitter_rust::HIGHLIGHT_QUERY;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Eq)]
 pub struct Span {
-    pub kind: Option<String>,
-    pub text: String,
+    pub kind: Option<Rc<String>>,
+    pub text: Rc<String>,
     pub start: usize,
     pub end: usize,
+}
+
+impl PartialEq for Span {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+            && Rc::ptr_eq(&self.text, &other.text)
+            && self.start == other.start
+            && self.end == other.end
+    }
 }
 
 #[derive(Debug)]
@@ -71,6 +80,23 @@ impl Buffer {
         mem::replace(&mut self.tree, tree)
     }
 
+    pub fn lines(&self) -> Vec<Vec<Span>> {
+        let spans = self.spans();
+        let mut lines = Vec::new();
+        let mut line = Vec::new();
+        let mut line_idx = 0;
+        for span in spans {
+            let span_line_idx = self.rope.byte_to_line(span.start);
+            if span_line_idx != line_idx {
+                line_idx = span_line_idx;
+                lines.push(mem::take(&mut line));
+            }
+            line.push(span);
+        }
+        lines.push(line);
+        lines
+    }
+
     fn highlights(&self) -> Vec<Item> {
         lazy_static! {
             static ref QUERY: Query =
@@ -96,7 +122,7 @@ impl Buffer {
             .collect()
     }
 
-    pub fn spans(&self) -> Vec<Span> {
+    fn spans(&self) -> Vec<Span> {
         let highlights = self.highlights();
         let mut iter = self.rope.bytes().enumerate().peekable();
         let mut spans = Vec::new();
@@ -108,8 +134,8 @@ impl Buffer {
                     if start < idx {
                         spans.push(Span {
                             kind: None,
-                            text: self.rope.slice(start + 1..idx).to_string(),
-                            start,
+                            text: Rc::new(self.rope.slice(start..idx).to_string()),
+                            start: start,
                             end: idx,
                         })
                     }
@@ -126,8 +152,8 @@ impl Buffer {
                         }
                     }
                     spans.push(Span {
-                        kind: Some(highlight.kind.clone()),
-                        text: self.rope.slice(idx..end).to_string(),
+                        kind: Some(Rc::new(highlight.kind.clone())),
+                        text: Rc::new(self.rope.slice(idx..end).to_string()),
                         start: idx,
                         end,
                     });
@@ -138,39 +164,11 @@ impl Buffer {
 
         spans.push(Span {
             kind: None,
-            text: self.rope.slice(start..).to_string(),
+            text: Rc::new(self.rope.slice(start..).to_string()),
             start: start,
             end: self.rope.len_bytes(),
         });
 
         spans
-    }
-
-    pub fn lines(&self) -> Vec<Vec<Span>> {
-        let spans = self.spans();
-        let mut lines = Vec::new();
-        let mut line = Vec::new();
-        let mut line_idx = 0;
-        for span in spans {
-            let span_line_idx = self.rope.byte_to_line(span.start);
-            if span_line_idx != line_idx {
-                line_idx = span_line_idx;
-                lines.push(mem::take(&mut line));
-            }
-            line.push(span);
-        }
-        lines.push(line);
-        lines
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::Buffer;
-
-    #[test]
-    fn it_works() {
-        let editor = Buffer::new("fn main() { for i in 0..2 {} }");
-        dbg!(editor.spans());
     }
 }

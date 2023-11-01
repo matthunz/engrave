@@ -1,5 +1,19 @@
+use lazy_static::lazy_static;
 use ropey::Rope;
-use tree_sitter::{InputEdit, Parser, Point, Range, Tree};
+use std::mem;
+use tree_sitter::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, Tree};
+
+#[derive(Debug)]
+pub struct Span {
+    pub kind: Option<String>,
+    pub text: String,
+}
+
+#[derive(Debug)]
+pub struct Item {
+    pub kind: String,
+    pub range: Range,
+}
 
 pub struct Editor {
     rope: Rope,
@@ -24,12 +38,7 @@ impl Editor {
         &self.tree
     }
 
-    pub fn insert(
-        &mut self,
-        line: usize,
-        col: usize,
-        text: &str,
-    ) -> impl ExactSizeIterator<Item = Range> {
+    pub fn insert(&mut self, line: usize, col: usize, text: &str) -> Tree {
         let idx = self.rope.line_to_char(line) + col;
         self.rope.insert(idx, text);
 
@@ -50,14 +59,81 @@ impl Editor {
                 Some(&self.tree),
             )
             .unwrap();
-        let changed_ranges = self.tree.changed_ranges(&tree);
-        self.tree = tree;
 
-        for node in self.tree.root_node().children(&mut self.tree.walk()) {
-            dbg!(node);
+        mem::replace(&mut self.tree, tree)
+    }
+
+    pub fn highlights(&self) -> Vec<Item> {
+        lazy_static! {
+            static ref QUERY: Query = Query::new(
+                tree_sitter_rust::language(),
+                r#"
+                    ["fn" "for" "while"] @keyword
+                "#,
+            )
+            .unwrap();
         }
 
-        changed_ranges
+        let mut query_cursor = QueryCursor::new();
+        let rope = &self.rope;
+        let matches = query_cursor.matches(&QUERY, self.tree.root_node(), move |node: Node| {
+            rope.byte_slice(node.start_byte()..node.end_byte())
+                .chunks()
+                .map(move |chunk| chunk.as_bytes())
+        });
+        matches
+            .flat_map(|mat| {
+                mat.captures.iter().map(|capture| {
+                    let range = capture.node.range();
+                    let kind = capture.node.kind().to_owned();
+                    Item { range, kind }
+                })
+            })
+            .collect()
+    }
+
+    pub fn spans(&self) -> Vec<Span> {
+        let highlights = self.highlights();
+        let mut iter = self.rope.bytes().enumerate().peekable();
+        let mut spans = Vec::new();
+        let mut start = 0;
+
+        while let Some((idx, _c)) = iter.next() {
+            for highlight in highlights.iter() {
+                if highlight.range.start_byte <= idx && highlight.range.end_byte >= idx {
+                    if start < idx {
+                        spans.push(Span {
+                            kind: None,
+                            text: self.rope.slice(start..idx).to_string(),
+                        })
+                    }
+
+                    let mut end = idx;
+                    'a: while let Some((next_idx, _)) = iter.peek() {
+                        if highlight.range.start_byte <= *next_idx
+                            && highlight.range.end_byte >= *next_idx
+                        {
+                            iter.next();
+                        } else {
+                            end = *next_idx;
+                            break 'a;
+                        }
+                    }
+                    spans.push(Span {
+                        kind: Some(highlight.kind.clone()),
+                        text: self.rope.slice(idx..end).to_string(),
+                    });
+                    start = end;
+                }
+            }
+        }
+
+        spans.push(Span {
+            kind: None,
+            text: self.rope.slice(start..).to_string(),
+        });
+
+        spans
     }
 }
 
@@ -67,9 +143,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let mut editor = Editor::new("fn main() {}");
-        for range in editor.insert(0, 0, "fn f() {}") {
-            dbg!(range);
-        }
+        let editor = Editor::new("fn main() { for i in 0..2 {} }");
+        dbg!(editor.spans());
     }
 }

@@ -8,6 +8,8 @@ use tree_sitter_rust::HIGHLIGHT_QUERY;
 pub struct Span {
     pub kind: Option<String>,
     pub text: String,
+    pub start: usize,
+    pub end: usize,
 }
 
 #[derive(Debug)]
@@ -107,6 +109,8 @@ impl Editor {
                         spans.push(Span {
                             kind: None,
                             text: self.rope.slice(start..idx).to_string(),
+                            start,
+                            end: idx,
                         })
                     }
 
@@ -124,6 +128,8 @@ impl Editor {
                     spans.push(Span {
                         kind: Some(highlight.kind.clone()),
                         text: self.rope.slice(idx..end).to_string(),
+                        start: idx,
+                        end,
                     });
                     start = end;
                 }
@@ -133,9 +139,28 @@ impl Editor {
         spans.push(Span {
             kind: None,
             text: self.rope.slice(start..).to_string(),
+            start: start,
+            end: self.rope.len_bytes(),
         });
 
         spans
+    }
+
+    pub fn lines(&self) -> Vec<Vec<Span>> {
+        let spans = self.spans();
+        let mut lines = Vec::new();
+        let mut line = Vec::new();
+        let mut line_idx = 0;
+        for span in spans {
+            let span_line_idx = self.rope.byte_to_line(span.start);
+            if span_line_idx != line_idx {
+                line_idx = span_line_idx;
+                lines.push(mem::take(&mut line));
+            }
+            line.push(span);
+        }
+        lines.push(line);
+        lines
     }
 }
 

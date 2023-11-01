@@ -3,7 +3,6 @@ use ropey::Rope;
 use std::mem;
 use tree_sitter_c2rust::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, Tree};
 
-
 #[derive(Debug)]
 pub struct Span {
     pub kind: Option<String>,
@@ -56,7 +55,12 @@ impl Editor {
         let tree = self
             .parser
             .parse_with(
-                &mut |idx, _| self.rope.chunks_at_byte(idx).0.next().unwrap_or_default(),
+                &mut |idx, _| {
+                    self.rope
+                        .get_chunks_at_byte(idx)
+                        .and_then(|mut chunk| chunk.0.next())
+                        .unwrap_or_default()
+                },
                 Some(&self.tree),
             )
             .unwrap();

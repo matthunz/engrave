@@ -21,45 +21,51 @@ fn app(cx: Scope) -> Element {
         .into_iter()
         .enumerate()
         .map(|(line_idx, spans)| {
-            render!(Line {
-                key: "{line_idx}",
-                spans: spans
-            })
+            render!( Line { key: "{line_idx}", spans: spans, is_selected: line_idx == cursor().row } )
         });
 
-    render!(div {
-        font: "18px monospace",
-        line_height: "24px",
-        tabindex: 0,
-        onkeydown: move |event| {
-            match event.key() {
-                Key::Character(text) => {
-                    let mut cursor_ref = cursor.write();
-                    editor
-                        .write()
-                        .insert(cursor_ref.row, cursor_ref.column, &text);
-                    cursor_ref.column += text.len();
+    render!(
+        div {
+            font: "18px monospace",
+            line_height: "24px",
+            tabindex: 0,
+            onkeydown: move |event| {
+                match event.key() {
+                    Key::Character(text) => {
+                        let mut cursor_ref = cursor.write();
+                        editor.write().insert(cursor_ref.row, cursor_ref.column, &text);
+                        cursor_ref.column += text.len();
+                    }
+                    Key::Enter => {
+                        let mut cursor_ref = cursor.write();
+                        editor.write().insert(cursor_ref.row, cursor_ref.column, "\n");
+                        cursor_ref.row += 1;
+                    }
+                    Key::ArrowUp => {
+                        let mut cursor_ref = cursor.write();
+                        cursor_ref.row = cursor_ref.row.saturating_sub(1);
+                    }
+                    Key::ArrowDown => {
+                        cursor.write().row += 1;
+                    }
+                    _ => {}
                 }
-                _ => {}
-            }
-        },
-        lines
-    })
+            },
+            lines
+        }
+    )
 }
 
 #[component]
-fn Line(cx: Scope, spans: Vec<Span>) -> Element {
+fn Line(cx: Scope, spans: Vec<Span>, is_selected: bool) -> Element {
     let spans = spans.into_iter().enumerate().map(|(span_idx, span)| {
-        render!(LineSpan {
-            key: "{span_idx}",
-            span: span.clone()
-        })
+        render!( LineSpan { key: "{span_idx}", span: span.clone() } )
     });
+    let border = if *is_selected { "2px solid #ccc"} else {"2px solid rgba(0, 0, 0, 0)"};
 
-    render!(div {
-        white_space: "pre",
-        spans
-    })
+    render!(
+        div { white_space: "pre", border_top: border, border_bottom: border, spans }
+    )
 }
 
 #[component]

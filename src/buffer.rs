@@ -147,7 +147,7 @@ impl Buffer {
                         {
                             iter.next();
                         } else {
-                            end = *next_idx;
+                            end = *next_idx - 1;
                             break 'a;
                         }
                     }
@@ -168,7 +168,6 @@ impl Buffer {
             start: start,
             end: self.rope.len_bytes(),
         });
-
         spans
     }
 }

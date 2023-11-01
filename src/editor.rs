@@ -98,11 +98,13 @@ fn Line(cx: Scope, spans: Vec<Span>, is_selected: bool) -> Element {
 fn LineSpan(cx: Scope, span: Span) -> Element {
     let color = match span.kind.as_deref() {
         Some(s) => match &**s {
-            "fn" | "struct" | "pub" | "let" | "match" => "rgb(207, 34, 46)",
-            "identifier" => "#427b58",
-            "attribute_item" | "type_identifier" => "rgb(96, 59, 179)",
-            "primitive_type" => "rgb(5, 80, 174)",
+            "fn" | "struct" | "pub" | "use" | "let" | "match" => "rgb(207, 34, 46)",
+            "" => "#427b58",
+            "attribute_item" | "type_identifier" | "identifier" => "rgb(96, 59, 179)",
+            "primitive_type" | "boolean_identifier" | "::" | "*" => "rgb(5, 80, 174)",
             "{" | "}" => "#076678",
+            "string_literal" => "#21262d",
+            ";" => "#ccc",
             _ => "#000",
         },
         _ => "#000",

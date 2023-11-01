@@ -1,4 +1,6 @@
 use dioxus::prelude::*;
+use dioxus_signals::use_signal;
+use editor::Editor;
 use log::LevelFilter;
 
 fn main() {
@@ -11,12 +13,17 @@ fn main() {
 }
 
 fn app(cx: Scope) -> Element {
-    cx.render(rsx! (
-        div {
-            style: "text-align: center;",
-            h1 { "🌗 Dioxus 🚀" }
-            h3 { "Frontend that scales." }
-            p { "Dioxus is a portable, performant, and ergonomic framework for building cross-platform user interfaces in Rust." }
-        }
-    ))
+    let editor = use_signal(cx, || Editor::new("fn main() {}"));
+    let spans = editor().spans().into_iter().map(|span| {
+        let color = match span.kind.as_deref() {
+            Some("fn") => "red",
+            _ => "#000"
+        };
+        render!(span {
+            color: color,
+            span.text
+        })
+    });
+
+    render!(div {font: "14px monospace", spans })
 }

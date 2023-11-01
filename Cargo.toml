@@ -7,10 +7,14 @@ edition = "2021"
 [dependencies]
 dioxus = { git = "https://github.com/dioxuslabs/dioxus" }
 dioxus-web = { git = "https://github.com/dioxuslabs/dioxus" }
+dioxus-signals = { git = "https://github.com/dioxuslabs/dioxus" }
 log = "0.4.19"
 dioxus-logger = "0.4.1"
 console_error_panic_hook = "0.1.7"
 ropey = "1.6.1"
-tree-sitter = "0.20.10"
-tree-sitter-rust = "0.20.4"
+tree-sitter-c2rust = "0.20.10"
+tree-sitter-rust = { git = "https://github.com/matthunz/tree-sitter-rust" }
 lazy_static = "1.4.0"
+
+[build-dependencies]
+cc="*"

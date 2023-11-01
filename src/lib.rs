@@ -1,7 +1,8 @@
 use lazy_static::lazy_static;
 use ropey::Rope;
 use std::mem;
-use tree_sitter::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, Tree};
+use tree_sitter_c2rust::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, Tree};
+
 
 #[derive(Debug)]
 pub struct Span {

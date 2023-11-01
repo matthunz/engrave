@@ -16,19 +16,40 @@ fn app(cx: Scope) -> Element {
     let editor = use_signal(cx, || Editor::new(include_str!("../example.rs")));
     let cursor = use_signal(cx, || Point::new(0, 0));
 
+    let container_ref = use_signal(cx, || None);
+
+
+    let is_focused = use_signal(cx, || false);
+
     let lines = editor()
         .lines()
         .into_iter()
         .enumerate()
         .map(|(line_idx, spans)| {
-            render!( Line { key: "{line_idx}", spans: spans, is_selected: line_idx == cursor().row } )
+            render!(
+                Line {
+                    key: "{line_idx}",
+                    spans: spans,
+                    is_selected: *is_focused() && line_idx == cursor().row
+                }
+            )
         });
+
 
     render!(
         div {
             font: "18px monospace",
             line_height: "24px",
             tabindex: 0,
+            onmounted: move |event| container_ref.set(Some(event.data)),
+            onclick: move |_| async move {
+                if let Some(mounted) = &*container_ref() {
+                    mounted.set_focus(true).await.unwrap();
+                    is_focused.set(true);
+                }
+            },
+            onfocusin: move |_| is_focused.set(true),
+            onfocusout: move |_| is_focused.set(false),
             onkeydown: move |event| {
                 match event.key() {
                     Key::Character(text) => {

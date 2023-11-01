@@ -4,7 +4,7 @@ use std::mem;
 use tree_sitter_c2rust::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, Tree};
 use tree_sitter_rust::HIGHLIGHT_QUERY;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Span {
     pub kind: Option<String>,
     pub text: String,

@@ -11,12 +11,14 @@ pub fn Editor(cx: Scope) -> Element {
     let cursor = use_signal(cx, || Point::new(0, 0));
     let is_focused = use_signal(cx, || false);
 
-    let layout = Layout::new(editor().rope.lines());
+    let layout = use_signal(cx, || Layout::new(editor().rope.lines()));
+    let layout_ref = layout();
+
     let mut y = 0.;
     let lines = editor()
         .lines()
         .into_iter()
-        .zip(layout.lines())
+        .zip(layout_ref.lines())
         .enumerate()
         .map(|(line_idx, (spans, line))| {
             let top = y;
@@ -52,6 +54,24 @@ pub fn Editor(cx: Scope) -> Element {
         },
         onfocusin: move |_| is_focused.set(true),
         onfocusout: move |_| is_focused.set(false),
+        onmousedown: move |event| async move {
+            let bounds = container_ref()
+                .as_ref()
+                .unwrap()
+                .get_client_rect()
+                .await
+                .unwrap();
+            if let Some((line, col_cell)) = layout().target(
+                event.client_coordinates().x - bounds.origin.x,
+                event.client_coordinates().y - bounds.origin.y,
+            ) {
+                if let Some(col) = col_cell {
+                    cursor.set(Point::new(line, col));
+                } else {
+                    cursor.set(Point::new(line, 0));
+                }
+            }
+        },
         onkeydown: move |event| {
             match event.key() {
                 Key::Character(text) => {

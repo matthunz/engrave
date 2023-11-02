@@ -28,7 +28,7 @@ struct Item {
 }
 
 pub struct Buffer {
-    rope: Rope,
+    pub rope: Rope,
     parser: Parser,
     tree: Tree,
 }

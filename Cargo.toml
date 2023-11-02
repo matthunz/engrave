@@ -15,6 +15,6 @@ ropey = "1.6.1"
 tree-sitter-c2rust = "0.20.10"
 tree-sitter-rust = { git = "https://github.com/matthunz/tree-sitter-rust" }
 lazy_static = "1.4.0"
-
-[build-dependencies]
-cc="*"
+wasm-bindgen = "0.2.87"
+web-sys = { version = "0.3.56", features = ["CanvasRenderingContext2d", "HtmlCanvasElement", "HtmlElement", "TextMetrics"] }
+js-sys = "0.3.65"

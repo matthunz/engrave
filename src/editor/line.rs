@@ -25,12 +25,12 @@ pub fn Line(cx: Scope, spans: Vec<Span>, is_selected: bool, top: f64, height: f6
 fn LineSpan(cx: Scope, span: Span) -> Element {
     let color = match span.kind.as_deref() {
         Some(s) => match &*s {
-            "fn" | "struct" | "pub" | "use" | "let" | "match" => "rgb(207, 34, 46)",
-            "" => "#427b58",
-            "attribute_item" | "type_identifier" | "identifier" => "rgb(96, 59, 179)",
-            "primitive_type" | "boolean_identifier" | "::" | "*" => "rgb(5, 80, 174)",
+            "fn" | "struct" | "pub" | "use" | "let" | "match" | "async" | "unsafe" | "move" => "rgb(207, 34, 46)",
+            "attribute_item" | "identifier" | "type_identifier" => "rgb(96, 59, 179)",
+            "primitive_type" | "boolean_identifier" | "::" | "*"  => "rgb(5, 80, 174)",
+            "string_literal" => "rgb(7, 69, 124)",
             "{" | "}" => "#076678",
-            "string_literal" => "#21262d",
+            "(" | ")" | "|" | "=>" => "#faa356",
             ";" => "#ccc",
             _ => "#000",
         },

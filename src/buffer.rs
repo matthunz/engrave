@@ -121,7 +121,7 @@ impl Buffer {
 
                                 spans.push(Span {
                                     kind: Some(Rc::new(highlight.kind.clone())),
-                                    text: Rc::new(line.slice(col..end).to_string()),
+                                    text: Rc::new(line.slice(col..end - 1).to_string()),
                                     start: 0,
                                     end: 0,
                                 })

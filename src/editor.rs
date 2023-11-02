@@ -14,6 +14,10 @@ pub fn Editor(cx: Scope) -> Element {
     let is_focused = use_signal(cx, || false);
 
     let layout = use_signal(cx, || Layout::new(editor().rope.lines()));
+    dioxus_signals::use_effect(cx, move || {
+        layout.set(Layout::new(editor().rope.lines()));
+    });
+
     let layout_ref = layout();
 
     let mut y = 0.;

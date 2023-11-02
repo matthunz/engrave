@@ -1,13 +1,14 @@
 use crate::{layout::Layout, Buffer, Span};
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
-use dioxus_signals::use_signal;
+use dioxus_signals::{use_signal, Signal};
 use gloo_timers::future::TimeoutFuture;
+use std::rc::Rc;
 use tree_sitter_c2rust::Point;
 
 #[component]
 pub fn Editor(cx: Scope) -> Element {
     let editor = use_signal(cx, || Buffer::new(include_str!("../example.rs")));
-    let container_ref = use_signal(cx, || None);
+    let container_ref: Signal<Option<Rc<MountedData>>> = use_signal(cx, || None);
 
     let cursor = use_signal(cx, || Point::new(0, 0));
     let is_focused = use_signal(cx, || false);
@@ -53,6 +54,8 @@ pub fn Editor(cx: Scope) -> Element {
         }
     });
 
+    log::info!("{:?}", cursor());
+
     render!(
         div {
             position: "relative",
@@ -68,7 +71,6 @@ pub fn Editor(cx: Scope) -> Element {
             tabindex: 0,
             outline: "none",
             prevent_default: "onkeydown",
-            onmounted: move |event| container_ref.set(Some(event.data)),
             onclick: move |_| async move {
                 if let Some(mounted) = &*container_ref() {
                     mounted.set_focus(true).await.unwrap();
@@ -77,22 +79,6 @@ pub fn Editor(cx: Scope) -> Element {
             },
             onfocusin: move |_| is_focused.set(true),
             onfocusout: move |_| is_focused.set(false),
-            onmousedown: move |event| async move {
-                let bounds = container_ref().as_ref().unwrap().get_client_rect().await.unwrap();
-                if let Some((line, col_cell))
-                    = layout()
-                        .target(
-                            event.client_coordinates().x - bounds.origin.x,
-                            event.client_coordinates().y - bounds.origin.y,
-                        )
-                {
-                    if let Some(col) = col_cell {
-                        cursor.set(Point::new(line, col));
-                    } else {
-                        cursor.set(Point::new(line, 0));
-                    }
-                }
-            },
             onkeydown: move |event| {
                 match event.key() {
                     Key::Character(text) => {
@@ -116,7 +102,27 @@ pub fn Editor(cx: Scope) -> Element {
                 }
             },
             div { position: "relative", width: "50px", line_numbers }
-            div { flex: 1, position: "relative", margin_left: "50px",
+            div {
+                flex: 1,
+                position: "relative",
+                margin_left: "50px",
+                onmounted: move |event| container_ref.set(Some(event.data)),
+                onmousedown: move |event| async move {
+                    let bounds = container_ref().as_ref().unwrap().get_client_rect().await.unwrap();
+                    if let Some((line, col_cell))
+                        = layout()
+                            .target(
+                                event.client_coordinates().x - bounds.origin.x,
+                                event.client_coordinates().y - bounds.origin.y,
+                            )
+                    {
+                        if let Some(col) = col_cell {
+                            cursor.set(Point::new(line, col));
+                        } else {
+                            cursor.set(Point::new(line, 0));
+                        }
+                    }
+                },
                 div {
                     position: "absolute",
                     top: "{cursor_pos[1]}px",

@@ -9,5 +9,5 @@ fn main() {
 }
 
 fn app(cx: Scope) -> Element {
-    render!( Editor {} )
+    render!(Editor {})
 }

@@ -81,10 +81,8 @@ impl Buffer {
     }
 
     pub fn lines2(&self) -> Vec<Vec<Span>> {
-        let mut lines = Vec::new();
-        for line in self.rope.lines() {
-            
-        }
+        let lines = Vec::new();
+        for _line in self.rope.lines() {}
         lines
     }
 

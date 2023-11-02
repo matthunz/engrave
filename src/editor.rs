@@ -1,7 +1,7 @@
 use crate::{layout::Layout, Buffer, Span};
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
 use dioxus_signals::{use_signal, Signal};
-use gloo_timers::future::TimeoutFuture;
+
 use std::rc::Rc;
 use tree_sitter_c2rust::Point;
 
@@ -17,33 +17,31 @@ pub fn Editor(cx: Scope) -> Element {
     let layout_ref = layout();
 
     let mut y = 0.;
-    let lines_and_numbers: Vec<_> = editor()
+
+    let mut line_numbers = Vec::new();
+    let mut lines = Vec::new();
+
+    for (line_idx, (spans, line)) in editor()
         .lines()
         .into_iter()
         .zip(layout_ref.lines())
         .enumerate()
-        .map(|(line_idx, (spans, line))| {
-            let top = y;
-            y += line.height;
+    {
+        let top = y;
+        y += line.height;
 
-            let line_number = render!(div { position: "absolute", top: "{top}px", right: 0, line_height: "inherit", "{line_idx}" });
+        let line_number = render!(div { position: "absolute", top: "{top}px", right: 0, line_height: "inherit", "{line_idx + 1}" });
+        line_numbers.push(line_number);
 
-            let line = render!(
-                Line {
-                    key: "{line_idx}",
-                    spans: spans,
-                    top: top,
-                    height: line.height,
-                    is_selected: *is_focused() && line_idx == cursor().row
-                }
-            );
-
-            (line_number, line)
-        })
-        .collect();
-
-    let lines = lines_and_numbers.clone().into_iter().map(|(_, line)| line);
-    let line_numbers = lines_and_numbers.into_iter().map(|(n, _)| n);
+        let line = render!(Line {
+            key: "{line_idx}",
+            spans: spans,
+            top: top,
+            height: line.height,
+            is_selected: *is_focused() && line_idx == cursor().row
+        });
+        lines.push(line);
+    }
 
     let cursor_pos = layout_ref.pos(cursor().clone());
 
@@ -92,7 +90,7 @@ pub fn Editor(cx: Scope) -> Element {
                     _ => {}
                 }
             },
-            div { position: "relative", width: "50px", line_numbers }
+            div { position: "relative", width: "50px", line_numbers.into_iter() }
             div {
                 flex: 1,
                 position: "relative",
@@ -123,7 +121,7 @@ pub fn Editor(cx: Scope) -> Element {
                     class: "cursor",
                     z_index: 9
                 }
-                lines
+                lines.into_iter()
             }
         }
     )
@@ -132,21 +130,26 @@ pub fn Editor(cx: Scope) -> Element {
 #[component]
 fn Line(cx: Scope, spans: Vec<Span>, is_selected: bool, top: f64, height: f64) -> Element {
     let spans = spans.into_iter().enumerate().map(|(span_idx, span)| {
-        render!( LineSpan { key: "{span_idx}", span: span.clone() } )
+        render!(LineSpan {
+            key: "{span_idx}",
+            span: span.clone()
+        })
     });
 
-    render!(
-        div {
-            position: "absolute",
-            top: "{top}px",
-            width: "100%",
-            height: "{height}px",
-            white_space: "pre",
-            border: if *is_selected { "2px solid #c6cdd5" } else { "2px solid rgba(0, 0, 0, 0)" },
-            box_sizing: "border-box",
-            spans
-        }
-    )
+    render!(div {
+        position: "absolute",
+        top: "{top}px",
+        width: "100%",
+        height: "{height}px",
+        white_space: "pre",
+        border: if *is_selected {
+            "2px solid #c6cdd5"
+        } else {
+            "2px solid rgba(0, 0, 0, 0)"
+        },
+        box_sizing: "border-box",
+        spans
+    })
 }
 
 #[component]

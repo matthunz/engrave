@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use ropey::RopeSlice;
 use tree_sitter_c2rust::Point;
 use wasm_bindgen::JsCast;
@@ -18,6 +20,7 @@ pub struct Line {
 pub struct Layout {
     lines: Vec<Line>,
     canvas: HtmlCanvasElement,
+    char_widths: HashMap<char, f64>,
 }
 
 impl Layout {
@@ -33,6 +36,7 @@ impl Layout {
         Self {
             lines: Vec::new(),
             canvas,
+            char_widths: HashMap::new(),
         }
     }
 
@@ -49,14 +53,21 @@ impl Layout {
                 let chars = line
                     .chars()
                     .map(|c| {
-                        let text_metrics = cx.measure_text(&c.to_string()).unwrap();
+                        let width = if let Some(width) = self.char_widths.get(&c) {
+                            *width
+                        } else {
+                            let text_metrics = cx.measure_text(&c.to_string()).unwrap();
+                            self.char_widths.insert(c, text_metrics.width());
+                            text_metrics.width()
+                        };
+
                         let x = current_x;
-                        current_x += text_metrics.width();
+                        current_x += width;
 
                         Char {
                             c,
-                            width: text_metrics.width(),
-                            x: x,
+                            width,
+                            x,
                             y: idx as f64 * height,
                         }
                     })

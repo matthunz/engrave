@@ -112,12 +112,14 @@ impl Buffer {
                                 }
                             }
                             if let Some(end) = end {
-                                spans.push(Span {
-                                    kind: None,
-                                    text: Rc::new(line.slice(start..col).to_string()),
-                                    start: 0,
-                                    end: 0,
-                                });
+                                if start < col {
+                                    spans.push(Span {
+                                        kind: None,
+                                        text: Rc::new(line.slice(start..col).to_string()),
+                                        start: 0,
+                                        end: 0,
+                                    });
+                                }
                                 start = end - 1;
 
                                 spans.push(Span {

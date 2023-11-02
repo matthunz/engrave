@@ -21,7 +21,7 @@ pub struct Layout {
 }
 
 impl Layout {
-    pub fn new<'a>(lines: impl Iterator<Item = RopeSlice<'a>>) -> Self {
+    pub fn new() -> Self {
         let elem = window()
             .unwrap()
             .document()
@@ -30,12 +30,19 @@ impl Layout {
             .unwrap();
         let canvas: HtmlCanvasElement = elem.unchecked_into();
 
-        let cx_object = canvas.get_context("2d").unwrap().unwrap();
+        Self {
+            lines: Vec::new(),
+            canvas,
+        }
+    }
+
+    pub fn measure<'a>(&mut self, lines: impl Iterator<Item = RopeSlice<'a>>) {
+        let cx_object = self.canvas.get_context("2d").unwrap().unwrap();
         let cx = cx_object.unchecked_ref::<CanvasRenderingContext2d>();
         cx.set_font("16px monospace");
 
         let height = 26.;
-        let lines = lines
+        self.lines = lines
             .enumerate()
             .map(|(idx, line)| {
                 let mut current_x = 0.;
@@ -57,12 +64,15 @@ impl Layout {
                 Line { chars, height }
             })
             .collect();
-
-        Self { lines, canvas }
     }
 
     pub fn lines(&self) -> &[Line] {
         &self.lines
+    }
+
+    pub fn pos(&self, point: Point) -> [f64; 2] {
+        let line_char = &self.lines[point.row].chars[point.column];
+        [line_char.x, line_char.y]
     }
 
     pub fn target(&self, x: f64, y: f64) -> Option<(usize, Option<usize>)> {
@@ -87,10 +97,5 @@ impl Layout {
             }
         }
         None
-    }
-
-    pub fn pos(&self, point: Point) -> [f64; 2] {
-        let line_char = &self.lines[point.row].chars[point.column];
-        [line_char.x, line_char.y]
     }
 }

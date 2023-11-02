@@ -19,4 +19,3 @@ lazy_static = "1.4.0"
 wasm-bindgen = "0.2.87"
 web-sys = { version = "0.3.56", features = ["CanvasRenderingContext2d", "HtmlCanvasElement", "HtmlElement", "TextMetrics"] }
 js-sys = "0.3.65"
-gloo-timers = { version = "0.3.0", features = ["futures"] }

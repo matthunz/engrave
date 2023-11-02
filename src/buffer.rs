@@ -80,6 +80,14 @@ impl Buffer {
         mem::replace(&mut self.tree, tree)
     }
 
+    pub fn lines2(&self) -> Vec<Vec<Span>> {
+        let mut lines = Vec::new();
+        for line in self.rope.lines() {
+            
+        }
+        lines
+    }
+
     pub fn lines(&self) -> Vec<Vec<Span>> {
         let spans = self.spans();
         let mut lines = Vec::new();

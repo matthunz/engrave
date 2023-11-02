@@ -46,15 +46,6 @@ pub fn Editor(cx: Scope) -> Element {
     let line_numbers = lines_and_numbers.into_iter().map(|(n, _)| n);
 
     let cursor_pos = layout_ref.pos(cursor().clone());
-    let is_cursor_shown = use_signal(cx, || true);
-    use_effect(cx, (), move |_| async move {
-        loop {
-            TimeoutFuture::new(500).await;
-            is_cursor_shown.toggle();
-        }
-    });
-
-    log::info!("{:?}", cursor());
 
     render!(
         div {
@@ -129,7 +120,7 @@ pub fn Editor(cx: Scope) -> Element {
                     left: "{cursor_pos[0]}px",
                     width: "3px",
                     height: "24px",
-                    background: if *is_cursor_shown() { "#000" } else { "none" },
+                    class: "cursor",
                     z_index: 9
                 }
                 lines
@@ -141,26 +132,21 @@ pub fn Editor(cx: Scope) -> Element {
 #[component]
 fn Line(cx: Scope, spans: Vec<Span>, is_selected: bool, top: f64, height: f64) -> Element {
     let spans = spans.into_iter().enumerate().map(|(span_idx, span)| {
-        render!(LineSpan {
-            key: "{span_idx}",
-            span: span.clone()
-        })
+        render!( LineSpan { key: "{span_idx}", span: span.clone() } )
     });
 
-    render!(div {
-        position: "absolute",
-        top: "{top}px",
-        width: "100%",
-        height: "{height}px",
-        white_space: "pre",
-        border: if *is_selected {
-            "2px solid #c6cdd5"
-        } else {
-            "2px solid rgba(0, 0, 0, 0)"
-        },
-        box_sizing: "border-box",
-        spans
-    })
+    render!(
+        div {
+            position: "absolute",
+            top: "{top}px",
+            width: "100%",
+            height: "{height}px",
+            white_space: "pre",
+            border: if *is_selected { "2px solid #c6cdd5" } else { "2px solid rgba(0, 0, 0, 0)" },
+            box_sizing: "border-box",
+            spans
+        }
+    )
 }
 
 #[component]

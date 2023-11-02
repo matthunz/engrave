@@ -1,0 +1,16 @@
+@keyframes cursorAnimation {
+    0% {
+        background: #000;
+    }
+    50% {
+        background: none;
+    }
+    100% {
+        background: #000;
+    }
+}
+
+.cursor {
+    animation: cursorAnimation 1000ms infinite;
+    animation-timing-function: step-start;
+}

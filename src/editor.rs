@@ -15,7 +15,7 @@ pub fn Editor(cx: Scope) -> Element {
     let layout_ref = layout();
 
     let mut y = 0.;
-    let lines = editor()
+    let lines_and_numbers: Vec<_> = editor()
         .lines()
         .into_iter()
         .zip(layout_ref.lines())
@@ -24,82 +24,91 @@ pub fn Editor(cx: Scope) -> Element {
             let top = y;
             y += line.height;
 
-            render!(Line {
-                key: "{line_idx}",
-                spans: spans,
-                top: top,
-                height: line.height,
-                is_selected: *is_focused() && line_idx == cursor().row
-            })
-        });
+            let line_number = render!(div { position: "absolute", top: "{top}px", right: 0, line_height: "inherit", "{line_idx}" });
 
-    render!(div {
-        position: "relative",
-        width: "800px",
-        height: "600px",
-        margin: "50px auto",
-        font: "18px monospace",
-        line_height: "24px",
-        border: "2px solid #ccc",
-        overflow: "auto",
-        tabindex: 0,
-        outline: "none",
-        prevent_default: "onkeydown",
-        onmounted: move |event| container_ref.set(Some(event.data)),
-        onclick: move |_| async move {
-            if let Some(mounted) = &*container_ref() {
-                mounted.set_focus(true).await.unwrap();
-                is_focused.set(true);
-            }
-        },
-        onfocusin: move |_| is_focused.set(true),
-        onfocusout: move |_| is_focused.set(false),
-        onmousedown: move |event| async move {
-            let bounds = container_ref()
-                .as_ref()
-                .unwrap()
-                .get_client_rect()
-                .await
-                .unwrap();
-            if let Some((line, col_cell)) = layout().target(
-                event.client_coordinates().x - bounds.origin.x,
-                event.client_coordinates().y - bounds.origin.y,
-            ) {
-                if let Some(col) = col_cell {
-                    cursor.set(Point::new(line, col));
-                } else {
-                    cursor.set(Point::new(line, 0));
+            let line = render!(
+                Line {
+                    key: "{line_idx}",
+                    spans: spans,
+                    top: top,
+                    height: line.height,
+                    is_selected: *is_focused() && line_idx == cursor().row
                 }
-            }
-        },
-        onkeydown: move |event| {
-            match event.key() {
-                Key::Character(text) => {
-                    let mut cursor_ref = cursor.write();
-                    editor
-                        .write()
-                        .insert(cursor_ref.row, cursor_ref.column, &text);
-                    cursor_ref.column += text.len();
+            );
+
+            (line_number, line)
+        })
+        .collect();
+
+    let lines = lines_and_numbers.clone().into_iter().map(|(_, line)| line);
+    let line_numbers = lines_and_numbers.into_iter().map(|(n, _)| n);
+
+    render!(
+        div {
+            position: "relative",
+            display: "flex",
+            flex_direction: "row",
+            width: "800px",
+            height: "600px",
+            margin: "50px auto",
+            font: "16px monospace",
+            line_height: "26px",
+            border: "2px solid #ccc",
+            overflow: "auto",
+            tabindex: 0,
+            outline: "none",
+            prevent_default: "onkeydown",
+            onmounted: move |event| container_ref.set(Some(event.data)),
+            onclick: move |_| async move {
+                if let Some(mounted) = &*container_ref() {
+                    mounted.set_focus(true).await.unwrap();
+                    is_focused.set(true);
                 }
-                Key::Enter => {
-                    let mut cursor_ref = cursor.write();
-                    editor
-                        .write()
-                        .insert(cursor_ref.row, cursor_ref.column, "\n");
-                    cursor_ref.row += 1;
+            },
+            onfocusin: move |_| is_focused.set(true),
+            onfocusout: move |_| is_focused.set(false),
+            onmousedown: move |event| async move {
+                let bounds = container_ref().as_ref().unwrap().get_client_rect().await.unwrap();
+                if let Some((line, col_cell))
+                    = layout()
+                        .target(
+                            event.client_coordinates().x - bounds.origin.x,
+                            event.client_coordinates().y - bounds.origin.y,
+                        )
+                {
+                    if let Some(col) = col_cell {
+                        cursor.set(Point::new(line, col));
+                    } else {
+                        cursor.set(Point::new(line, 0));
+                    }
                 }
-                Key::ArrowUp => {
-                    let mut cursor_ref = cursor.write();
-                    cursor_ref.row = cursor_ref.row.saturating_sub(1);
+            },
+            onkeydown: move |event| {
+                match event.key() {
+                    Key::Character(text) => {
+                        let mut cursor_ref = cursor.write();
+                        editor.write().insert(cursor_ref.row, cursor_ref.column, &text);
+                        cursor_ref.column += text.len();
+                    }
+                    Key::Enter => {
+                        let mut cursor_ref = cursor.write();
+                        editor.write().insert(cursor_ref.row, cursor_ref.column, "\n");
+                        cursor_ref.row += 1;
+                    }
+                    Key::ArrowUp => {
+                        let mut cursor_ref = cursor.write();
+                        cursor_ref.row = cursor_ref.row.saturating_sub(1);
+                    }
+                    Key::ArrowDown => {
+                        cursor.write().row += 1;
+                    }
+                    _ => {}
                 }
-                Key::ArrowDown => {
-                    cursor.write().row += 1;
-                }
-                _ => {}
-            }
-        },
-        lines
-    })
+            },
+            div { position: "relative", width: "50px", line_numbers }
+            div { flex: 1, position: "relative", margin_left: "50px", lines }
+        }
+    )
 }
 
 #[component]
@@ -110,11 +119,6 @@ fn Line(cx: Scope, spans: Vec<Span>, is_selected: bool, top: f64, height: f64) -
             span: span.clone()
         })
     });
-    let border = if *is_selected {
-        "2px solid #ccc"
-    } else {
-        "2px solid rgba(0, 0, 0, 0)"
-    };
 
     render!(div {
         position: "absolute",
@@ -122,8 +126,12 @@ fn Line(cx: Scope, spans: Vec<Span>, is_selected: bool, top: f64, height: f64) -
         width: "100%",
         height: "{height}px",
         white_space: "pre",
-        border_top: border,
-        border_bottom: border,
+        border: if *is_selected {
+            "2px solid #c6cdd5"
+        } else {
+            "2px solid rgba(0, 0, 0, 0)"
+        },
+        box_sizing: "border-box",
         spans
     })
 }

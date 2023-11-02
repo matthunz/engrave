@@ -29,9 +29,9 @@ impl Layout {
 
         let cx_object = canvas.get_context("2d").unwrap().unwrap();
         let cx = cx_object.unchecked_ref::<CanvasRenderingContext2d>();
-        cx.set_font("18px monospace");
+        cx.set_font("16px monospace");
 
-        let mut height = 24.;
+        let height = 26.;
         let lines = lines
             .map(|line| {
                 let chars = line

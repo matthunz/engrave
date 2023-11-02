@@ -119,7 +119,8 @@ pub fn Editor(cx: Scope) -> Element {
                     width: "3px",
                     height: "24px",
                     class: "cursor",
-                    z_index: 9
+                    z_index: 9,
+                    display: if *is_focused() { "block" } else { "none" }
                 }
                 lines.into_iter()
             }

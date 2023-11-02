@@ -1,12 +1,12 @@
 @keyframes cursorAnimation {
     0% {
-        background: #000;
-    }
-    50% {
         background: none;
     }
-    100% {
+    50% {
         background: #000;
+    }
+    100% {
+        background: none;
     }
 }
 

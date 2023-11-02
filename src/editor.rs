@@ -1,6 +1,7 @@
 use crate::{layout::Layout, Buffer, Span};
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
 use dioxus_signals::use_signal;
+use gloo_timers::future::TimeoutFuture;
 use tree_sitter_c2rust::Point;
 
 #[component]
@@ -42,6 +43,15 @@ pub fn Editor(cx: Scope) -> Element {
 
     let lines = lines_and_numbers.clone().into_iter().map(|(_, line)| line);
     let line_numbers = lines_and_numbers.into_iter().map(|(n, _)| n);
+
+    let cursor_pos = layout_ref.pos(cursor().clone());
+    let is_cursor_shown = use_signal(cx, || true);
+    use_effect(cx, (), move |_| async move {
+        loop {
+            TimeoutFuture::new(500).await;
+            is_cursor_shown.toggle();
+        }
+    });
 
     render!(
         div {
@@ -106,7 +116,18 @@ pub fn Editor(cx: Scope) -> Element {
                 }
             },
             div { position: "relative", width: "50px", line_numbers }
-            div { flex: 1, position: "relative", margin_left: "50px", lines }
+            div { flex: 1, position: "relative", margin_left: "50px",
+                div {
+                    position: "absolute",
+                    top: "{cursor_pos[1]}px",
+                    left: "{cursor_pos[0]}px",
+                    width: "3px",
+                    height: "24px",
+                    background: if *is_cursor_shown() { "#000" } else { "none" },
+                    z_index: 9
+                }
+                lines
+            }
         }
     )
 }

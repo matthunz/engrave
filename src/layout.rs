@@ -1,10 +1,13 @@
 use ropey::RopeSlice;
+use tree_sitter_c2rust::Point;
 use wasm_bindgen::JsCast;
 use web_sys::{window, CanvasRenderingContext2d, HtmlCanvasElement};
 
 pub struct Char {
     pub c: char,
     pub width: f64,
+    pub x: f64,
+    pub y: f64,
 }
 
 pub struct Line {
@@ -33,15 +36,21 @@ impl Layout {
 
         let height = 26.;
         let lines = lines
-            .map(|line| {
+            .enumerate()
+            .map(|(idx, line)| {
+                let mut current_x = 0.;
                 let chars = line
                     .chars()
                     .map(|c| {
                         let text_metrics = cx.measure_text(&c.to_string()).unwrap();
+                        let x = current_x;
+                        current_x += text_metrics.width();
 
                         Char {
                             c,
                             width: text_metrics.width(),
+                            x: x,
+                            y: idx as f64 * height,
                         }
                     })
                     .collect();
@@ -78,5 +87,10 @@ impl Layout {
             }
         }
         None
+    }
+
+    pub fn pos(&self, point: Point) -> [f64; 2] {
+        let line_char = &self.lines[point.row].chars[point.column];
+        [line_char.x, line_char.y]
     }
 }

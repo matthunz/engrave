@@ -34,13 +34,15 @@ pub fn Editor(cx: Scope, buffer: Signal<Buffer>) -> Element {
         let line_number = render!(div { position: "absolute", top: "{top}px", right: 0, line_height: "inherit", "{line_idx + 1}" });
         line_numbers.push(line_number);
 
-        let line = render!(Line {
-            key: "{line_idx}",
-            spans: spans,
-            top: top,
-            height: line.height,
-            is_selected: *is_focused() && line_idx == cursor().row
-        });
+        let line = render!(
+            Line {
+                key: "{line_idx}",
+                spans: spans,
+                top: top,
+                height: line.height,
+                is_selected: *is_focused() && line_idx == cursor().row
+            }
+        );
         lines.push(line);
     }
 

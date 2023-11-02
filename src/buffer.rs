@@ -5,26 +5,10 @@ use ropey::Rope;
 use std::{mem, rc::Rc};
 use tree_sitter_c2rust::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, Tree};
 use tree_sitter_rust::HIGHLIGHT_QUERY;
+use crate::Span;
 
 pub fn use_buffer<'a, T>(cx: Scope<T>, make_text: impl FnOnce() -> &'a str) -> Signal<Buffer> {
     use_signal(cx, || Buffer::new(make_text()))
-}
-
-#[derive(Clone, Debug, Eq)]
-pub struct Span {
-    pub kind: Option<Rc<String>>,
-    pub text: Rc<String>,
-    pub start: usize,
-    pub end: usize,
-}
-
-impl PartialEq for Span {
-    fn eq(&self, other: &Self) -> bool {
-        self.kind == other.kind
-            && Rc::ptr_eq(&self.text, &other.text)
-            && self.start == other.start
-            && self.end == other.end
-    }
 }
 
 #[derive(Debug)]
@@ -83,7 +67,7 @@ impl Buffer {
                         .and_then(|mut chunk| chunk.0.next())
                         .unwrap_or_default()
                 },
-                Some(&self.tree),
+                None, // Some(&self.tree),
             )
             .unwrap();
         mem::replace(&mut self.tree, tree)
@@ -112,41 +96,29 @@ impl Buffer {
                                     if start_point.column <= *next_col
                                         && end_point.column >= *next_col
                                     {
+                                        end = Some(*next_col);
                                         iter.next();
                                     } else {
-                                        end = Some(*next_col);
                                         break;
                                     }
                                 }
                             }
                             if let Some(end) = end {
                                 if start < col {
-                                    spans.push(Span {
-                                        kind: None,
-                                        text: Rc::new(line.slice(start..col).to_string()),
-                                        start: 0,
-                                        end: 0,
-                                    });
+                                    spans.push(Span::text(line.slice(start..col).to_string()))
                                 }
-                                start = end - 1;
+                                start = end;
 
-                                spans.push(Span {
-                                    kind: Some(Rc::new(highlight.kind.clone())),
-                                    text: Rc::new(line.slice(col..end - 1).to_string()),
-                                    start: 0,
-                                    end: 0,
-                                })
+                                spans.push(Span::new(
+                                    Some(Rc::from(&*highlight.kind)),
+                                    line.slice(col..end).to_string(),
+                                ))
                             }
                         }
                     }
                 }
 
-                spans.push(Span {
-                    kind: None,
-                    text: Rc::new(line.slice(start..).to_string()),
-                    start: 0,
-                    end: 0,
-                });
+                spans.push(Span::text(line.slice(start..).to_string()));
                 spans
             })
             .collect()

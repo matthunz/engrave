@@ -1,13 +1,15 @@
-use crate::{layout::Layout, Buffer, Span};
+use crate::{layout::Layout, Buffer};
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
 use dioxus_signals::{use_signal, Signal};
-
 use std::rc::Rc;
 use tree_sitter_c2rust::Point;
 
+mod line;
+use line::Line;
+
 #[component]
 pub fn Editor(cx: Scope) -> Element {
-    let editor = use_signal(cx, || Buffer::new(include_str!("../example.rs")));
+    let editor = use_signal(cx, || Buffer::new(include_str!("../../example.rs")));
     let container_ref: Signal<Option<Rc<MountedData>>> = use_signal(cx, || None);
 
     let cursor = use_signal(cx, || Point::new(0, 0));
@@ -19,12 +21,9 @@ pub fn Editor(cx: Scope) -> Element {
     });
 
     let layout_ref = layout();
-
     let mut y = 0.;
-
     let mut line_numbers = Vec::new();
     let mut lines = Vec::new();
-
     for (line_idx, (spans, line)) in editor()
         .lines()
         .into_iter()
@@ -48,7 +47,6 @@ pub fn Editor(cx: Scope) -> Element {
     }
 
     let cursor_pos = layout_ref.pos(cursor().clone());
-
     render!(
         div {
             position: "relative",
@@ -129,51 +127,5 @@ pub fn Editor(cx: Scope) -> Element {
                 lines.into_iter()
             }
         }
-    )
-}
-
-#[component]
-fn Line(cx: Scope, spans: Vec<Span>, is_selected: bool, top: f64, height: f64) -> Element {
-    let spans = spans.into_iter().enumerate().map(|(span_idx, span)| {
-        render!(LineSpan {
-            key: "{span_idx}",
-            span: span.clone()
-        })
-    });
-
-    render!(div {
-        position: "absolute",
-        top: "{top}px",
-        width: "100%",
-        height: "{height}px",
-        white_space: "pre",
-        border: if *is_selected {
-            "2px solid #c6cdd5"
-        } else {
-            "2px solid rgba(0, 0, 0, 0)"
-        },
-        box_sizing: "border-box",
-        spans
-    })
-}
-
-#[component]
-fn LineSpan(cx: Scope, span: Span) -> Element {
-    let color = match span.kind.as_deref() {
-        Some(s) => match &**s {
-            "fn" | "struct" | "pub" | "use" | "let" | "match" => "rgb(207, 34, 46)",
-            "" => "#427b58",
-            "attribute_item" | "type_identifier" | "identifier" => "rgb(96, 59, 179)",
-            "primitive_type" | "boolean_identifier" | "::" | "*" => "rgb(5, 80, 174)",
-            "{" | "}" => "#076678",
-            "string_literal" => "#21262d",
-            ";" => "#ccc",
-            _ => "#000",
-        },
-        _ => "#000",
-    };
-
-    render!(
-        span { color: color, "data-kind": "{span.kind.clone().unwrap_or_default()}", "{span.text}" }
     )
 }

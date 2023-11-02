@@ -44,7 +44,7 @@ pub fn Editor(cx: Scope, buffer: Signal<Buffer>) -> Element {
         lines.push(line);
     }
 
-    let cursor_pos = layout_ref.pos(cursor().clone());
+    let cursor_pos = layout_ref.pos(cursor().clone()).unwrap_or_default();
     render!(
         div {
             position: "relative",

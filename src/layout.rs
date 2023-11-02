@@ -81,9 +81,9 @@ impl Layout {
         &self.lines
     }
 
-    pub fn pos(&self, point: Point) -> [f64; 2] {
-        let line_char = &self.lines[point.row].chars[point.column];
-        [line_char.x, line_char.y]
+    pub fn pos(&self, point: Point) -> Option<[f64; 2]> {
+        let line_char = &self.lines.get(point.row)?.chars.get(point.column)?;
+        Some([line_char.x, line_char.y])
     }
 
     pub fn target(&self, x: f64, y: f64) -> Option<(usize, Option<usize>)> {

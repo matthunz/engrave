@@ -2,11 +2,7 @@ use dioxus::prelude::Scope;
 use dioxus_signals::{use_signal, Signal};
 use lazy_static::lazy_static;
 use ropey::Rope;
-use std::{
-    mem,
-    ops::{Deref, DerefMut},
-    rc::Rc,
-};
+use std::{mem, rc::Rc};
 use tree_sitter_c2rust::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, Tree};
 use tree_sitter_rust::HIGHLIGHT_QUERY;
 
@@ -63,7 +59,6 @@ impl Buffer {
     pub fn insert(&mut self, line: usize, col: usize, text: &str) -> Tree {
         let char_idx = self.rope.line_to_char(line) + col;
         let idx = self.rope.char_to_byte(char_idx);
-
         self.rope.insert(char_idx, text);
 
         let edit = InputEdit {
@@ -72,9 +67,13 @@ impl Buffer {
             new_end_byte: idx + text.len(),
             start_position: Point::new(line, col),
             old_end_position: Point::new(line, col),
-            new_end_position: Point::new(line, col + text.chars().count()),
+            new_end_position: Point::new(
+                line + text.lines().count() - 1,
+                col + text.chars().count(),
+            ),
         };
         self.tree.edit(&edit);
+
         let tree = self
             .parser
             .parse_with(
@@ -87,7 +86,6 @@ impl Buffer {
                 Some(&self.tree),
             )
             .unwrap();
-
         mem::replace(&mut self.tree, tree)
     }
 

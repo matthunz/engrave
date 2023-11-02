@@ -80,27 +80,65 @@ impl Buffer {
         mem::replace(&mut self.tree, tree)
     }
 
-    pub fn lines2(&self) -> Vec<Vec<Span>> {
-        let lines = Vec::new();
-        for _line in self.rope.lines() {}
-        lines
-    }
-
     pub fn lines(&self) -> Vec<Vec<Span>> {
-        let spans = self.spans();
-        let mut lines = Vec::new();
-        let mut line = Vec::new();
-        let mut line_idx = 0;
-        for span in spans {
-            let span_line_idx = self.rope.byte_to_line(span.start);
-            if span_line_idx != line_idx {
-                line_idx = span_line_idx;
-                lines.push(mem::take(&mut line));
-            }
-            line.push(span);
-        }
-        lines.push(line);
-        lines
+        let highlights = self.highlights();
+
+        self.rope
+            .lines()
+            .enumerate()
+            .map(|(idx, line)| {
+                let mut spans = Vec::new();
+                let mut iter = line.chars().enumerate().peekable();
+                let mut start = 0;
+
+                while let Some((col, _c)) = iter.next() {
+                    for highlight in &highlights {
+                        let start_point = highlight.range.start_point;
+                        let end_point = highlight.range.end_point;
+
+                        if start_point.row <= idx && end_point.row >= idx {
+                            let mut end = None;
+                            if start_point.column <= col && end_point.column >= col {
+                                while let Some((next_col, _next_c)) = iter.peek() {
+                                    if start_point.column <= *next_col
+                                        && end_point.column >= *next_col
+                                    {
+                                        iter.next();
+                                    } else {
+                                        end = Some(*next_col);
+                                        break;
+                                    }
+                                }
+                            }
+                            if let Some(end) = end {
+                                spans.push(Span {
+                                    kind: None,
+                                    text: Rc::new(line.slice(start..col).to_string()),
+                                    start: 0,
+                                    end: 0,
+                                });
+                                start = end - 1;
+
+                                spans.push(Span {
+                                    kind: Some(Rc::new(highlight.kind.clone())),
+                                    text: Rc::new(line.slice(col..end).to_string()),
+                                    start: 0,
+                                    end: 0,
+                                })
+                            }
+                        }
+                    }
+                }
+
+                spans.push(Span {
+                    kind: None,
+                    text: Rc::new(line.slice(start..).to_string()),
+                    start: 0,
+                    end: 0,
+                });
+                spans
+            })
+            .collect()
     }
 
     fn highlights(&self) -> Vec<Item> {
@@ -126,54 +164,5 @@ impl Buffer {
                 })
             })
             .collect()
-    }
-
-    fn spans(&self) -> Vec<Span> {
-        let highlights = self.highlights();
-        let mut iter = self.rope.bytes().enumerate().peekable();
-        let mut spans = Vec::new();
-        let mut start = 0;
-
-        while let Some((idx, _c)) = iter.next() {
-            for highlight in highlights.iter() {
-                if highlight.range.start_byte <= idx && highlight.range.end_byte >= idx {
-                    if start < idx {
-                        spans.push(Span {
-                            kind: None,
-                            text: Rc::new(self.rope.slice(start..idx).to_string()),
-                            start: start,
-                            end: idx,
-                        })
-                    }
-
-                    let mut end = idx;
-                    'a: while let Some((next_idx, _)) = iter.peek() {
-                        if highlight.range.start_byte <= *next_idx
-                            && highlight.range.end_byte >= *next_idx
-                        {
-                            iter.next();
-                        } else {
-                            end = *next_idx - 1;
-                            break 'a;
-                        }
-                    }
-                    spans.push(Span {
-                        kind: Some(Rc::new(highlight.kind.clone())),
-                        text: Rc::new(self.rope.slice(idx..end).to_string()),
-                        start: idx,
-                        end,
-                    });
-                    start = end;
-                }
-            }
-        }
-
-        spans.push(Span {
-            kind: None,
-            text: Rc::new(self.rope.slice(start..).to_string()),
-            start: start,
-            end: self.rope.len_bytes(),
-        });
-        spans
     }
 }

@@ -5,7 +5,7 @@ use log::LevelFilter;
 fn app(cx: Scope) -> Element {
     let buffer = use_buffer(cx, || include_str!("editor.rs"));
 
-    render!( Editor { buffer: buffer } )
+    render!(Editor { buffer: buffer })
 }
 
 fn main() {

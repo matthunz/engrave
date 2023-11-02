@@ -1,3 +1,4 @@
+use crate::Span;
 use dioxus::prelude::Scope;
 use dioxus_signals::{use_signal, Signal};
 use lazy_static::lazy_static;
@@ -5,7 +6,6 @@ use ropey::Rope;
 use std::{mem, rc::Rc};
 use tree_sitter_c2rust::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, Tree};
 use tree_sitter_rust::HIGHLIGHT_QUERY;
-use crate::Span;
 
 pub fn use_buffer<'a, T>(cx: Scope<T>, make_text: impl FnOnce() -> &'a str) -> Signal<Buffer> {
     use_signal(cx, || Buffer::new(make_text()))

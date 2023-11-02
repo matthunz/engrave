@@ -8,21 +8,21 @@ mod line;
 use line::Line;
 
 #[component]
-pub fn Editor(cx: Scope) -> Element {
-    let editor = use_signal(cx, || Buffer::new(include_str!("../../example.rs")));
+pub fn Editor(cx: Scope, buffer: Signal<Buffer>) -> Element {
     let container_ref: Signal<Option<Rc<MountedData>>> = use_signal(cx, || None);
+    let layout = use_signal(cx, || Layout::new());
+
+    to_owned![buffer];
+    dioxus_signals::use_effect(cx, move || layout.write().measure(buffer().rope.lines()));
 
     let cursor = use_signal(cx, || Point::new(0, 0));
     let is_focused = use_signal(cx, || false);
-
-    let layout = use_signal(cx, || Layout::new());
-    dioxus_signals::use_effect(cx, move || layout.write().measure(editor().rope.lines()));
 
     let layout_ref = layout();
     let mut y = 0.;
     let mut line_numbers = Vec::new();
     let mut lines = Vec::new();
-    for (line_idx, (spans, line)) in editor()
+    for (line_idx, (spans, line)) in buffer()
         .lines()
         .into_iter()
         .zip(layout_ref.lines())
@@ -72,12 +72,12 @@ pub fn Editor(cx: Scope) -> Element {
                 match event.key() {
                     Key::Character(text) => {
                         let mut cursor_ref = cursor.write();
-                        editor.write().insert(cursor_ref.row, cursor_ref.column, &text);
+                        buffer.write().insert(cursor_ref.row, cursor_ref.column, &text);
                         cursor_ref.column += text.len();
                     }
                     Key::Enter => {
                         let mut cursor_ref = cursor.write();
-                        editor.write().insert(cursor_ref.row, cursor_ref.column, "\n");
+                        buffer.write().insert(cursor_ref.row, cursor_ref.column, "\n");
                         cursor_ref.row += 1;
                     }
                     Key::ArrowUp => {

@@ -1,8 +1,18 @@
+use dioxus::prelude::Scope;
+use dioxus_signals::{use_signal, Signal};
 use lazy_static::lazy_static;
 use ropey::Rope;
-use std::{mem, rc::Rc};
+use std::{
+    mem,
+    ops::{Deref, DerefMut},
+    rc::Rc,
+};
 use tree_sitter_c2rust::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, Tree};
 use tree_sitter_rust::HIGHLIGHT_QUERY;
+
+pub fn use_buffer<'a, T>(cx: Scope<T>, make_text: impl FnOnce() -> &'a str) -> Signal<Buffer> {
+    use_signal(cx, || Buffer::new(make_text()))
+}
 
 #[derive(Clone, Debug, Eq)]
 pub struct Span {

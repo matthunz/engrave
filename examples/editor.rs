@@ -7,7 +7,7 @@ fn app(cx: Scope) -> Element {
         include_str!("../src/editor/use_editor.rs")
     });
 
-    render!( Editor { editor: editor } )
+    render!(Editor { editor: editor })
 }
 
 fn main() {

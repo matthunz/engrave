@@ -380,7 +380,7 @@ dependencies = [
 [[package]]
 name = "dioxus-use-mounted"
 version = "0.1.0"
-source = "git+https://github.com/matthunz/dioxus-use-mounted#7f27c94bb6b2e63f175aeab06b671c0940e4bd15"
+source = "git+https://github.com/matthunz/dioxus-use-mounted#2135199736a11a327c20e141d90321508e08e738"
 dependencies = [
  "dioxus",
  "dioxus-signals",

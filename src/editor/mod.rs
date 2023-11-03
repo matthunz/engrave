@@ -1,8 +1,6 @@
 use crate::layout::Layout;
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
-use dioxus_resize_observer::use_size;
 use dioxus_signals::{use_signal, Signal};
-use dioxus_use_mounted::use_mounted;
 use std::rc::Rc;
 use tree_sitter_c2rust::Point;
 
@@ -28,11 +26,7 @@ pub fn Editor(
 ) -> Element {
     to_owned![editor, font_size, line_height];
 
-    let container_ref = use_mounted(cx);
-    let container_size = use_size(cx, container_ref);
-
     let lines_ref: Signal<Option<Rc<MountedData>>> = use_signal(cx, || None);
-    let scroll = use_signal(cx, || 0);
 
     let layout = use_signal(cx, || Layout::new(font_size, line_height));
     dioxus_signals::use_effect(cx, move || {
@@ -40,9 +34,8 @@ pub fn Editor(
     });
 
     let layout_ref = layout();
-    let top_line = layout_ref.line(*scroll() as _).unwrap_or_default();
-    let bottom_line =
-        top_line + (container_size.height() as f64 / line_height).floor() as usize + 1;
+    let top_line = layout_ref.line(editor.scroll() as _).unwrap_or_default();
+    let bottom_line = top_line + (editor.container_height / line_height).floor() as usize + 1;
 
     let point = editor.cursor();
     let cursor_point = point
@@ -54,7 +47,6 @@ pub fn Editor(
     let mut line_numbers = Vec::new();
     let mut lines = Vec::new();
     let mut y = top_line as f64 * line_height;
-
     for (line_idx, (spans, line)) in editor
         .buffer()
         .lines(&editor.query.read(), top_line..top_line + bottom_line)
@@ -76,18 +68,17 @@ pub fn Editor(
             false
         };
 
-        let line = render!(
-            Line {
-                key: "{line_idx}",
-                spans: spans,
-                top: top,
-                height: line.height,
-                is_selected: is_selected
-            }
-        );
+        let line = render!(Line {
+            key: "{line_idx}",
+            spans: spans,
+            top: top,
+            height: line.height,
+            is_selected: is_selected
+        });
         lines.push(line);
     }
 
+    let height = editor.buffer().rope.len_lines() as f64 * line_height;
     let onkeydown = move |event: KeyboardEvent| match event.key() {
         Key::Character(text) => editor.insert(&text),
         Key::Enter => {
@@ -104,16 +95,13 @@ pub fn Editor(
         Key::ArrowDown => editor.cursor_mut().row += 1,
         _ => {}
     };
-
     let onscroll = move |_| {
-        if let Some(container) = &*container_ref.signal.read() {
+        if let Some(container) = &*editor.container_ref.signal.read() {
             let elem: &web_sys::Element =
                 container.get_raw_element().unwrap().downcast_ref().unwrap();
-            scroll.set(elem.scroll_top());
+            editor.set_scroll(elem.scroll_top());
         }
     };
-
-    let height = editor.buffer().rope.len_lines() as f64 * line_height;
 
     render!(
         div {
@@ -130,9 +118,9 @@ pub fn Editor(
             tabindex: 0,
             outline: "none",
             prevent_default: "onkeydown",
-            onmounted: move |event| container_ref.onmounted(event),
+            onmounted: move |event| editor.container_ref.onmounted(event),
             onclick: move |_| async move {
-                if let Some(mounted) = &*container_ref.signal.read() {
+                if let Some(mounted) = &*editor.container_ref.signal.read() {
                     mounted.set_focus(true).await.unwrap();
                     editor.focus();
                 }

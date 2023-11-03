@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use ropey::RopeSlice;
+use std::collections::HashMap;
 use tree_sitter_c2rust::Point;
 use wasm_bindgen::JsCast;
 use web_sys::{window, CanvasRenderingContext2d, HtmlCanvasElement};

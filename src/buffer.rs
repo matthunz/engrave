@@ -1,7 +1,6 @@
 use crate::Span;
 use dioxus::prelude::Scope;
 use dioxus_signals::{use_signal, Signal};
-
 use ropey::Rope;
 use std::mem;
 use tree_sitter_c2rust::{
@@ -26,20 +25,18 @@ pub struct Buffer {
     pub rope: Rope,
     parser: Parser,
     tree: Tree,
-    language: Language,
 }
 
 impl Buffer {
     pub fn new(language: Language, text: &str) -> Self {
         let mut parser = Parser::new();
-        parser.set_language(tree_sitter_rust::language()).unwrap();
+        parser.set_language(language).unwrap();
         let tree = parser.parse(text, None).unwrap();
 
         Self {
             rope: Rope::from_str(text),
             parser,
             tree,
-            language,
         }
     }
 

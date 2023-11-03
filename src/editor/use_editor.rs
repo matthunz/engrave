@@ -1,18 +1,28 @@
-use crate::{use_buffer, Buffer};
-use dioxus::prelude::Scope;
+use crate::{use_buffer, use_query, Buffer};
+use dioxus::prelude::{use_context_provider, Scope};
 use dioxus_signals::{use_signal, Signal, Write};
 use std::cell::Ref;
-use tree_sitter_c2rust::Point;
+use tree_sitter_c2rust::{Language, Point, Query};
+use tree_sitter_rust::HIGHLIGHT_QUERY;
 
-pub fn use_editor<'a, T>(cx: Scope<T>, make_text: impl FnOnce() -> &'a str) -> UseEditor {
-    let buffer = use_buffer(cx, make_text);
+pub fn use_editor<'a, T>(
+    cx: Scope<T>,
+    language: Language,
+    make_text: impl FnOnce() -> &'a str,
+) -> UseEditor {
+    let buffer = use_buffer(cx, language, make_text);
     let cursor = use_signal(cx, || Point::new(0, 0));
     let is_focused = use_signal(cx, || false);
+
+    use_context_provider(cx, || Signal::new(language));
+
+    let query = use_query(cx, HIGHLIGHT_QUERY);
 
     UseEditor {
         buffer,
         cursor,
         is_focused,
+        query,
     }
 }
 
@@ -21,6 +31,7 @@ pub struct UseEditor {
     buffer: Signal<Buffer>,
     cursor: Signal<Point>,
     is_focused: Signal<bool>,
+    pub(crate) query: Signal<Query>,
 }
 
 impl UseEditor {

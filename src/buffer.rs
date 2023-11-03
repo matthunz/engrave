@@ -1,14 +1,19 @@
 use crate::Span;
 use dioxus::prelude::Scope;
 use dioxus_signals::{use_signal, Signal};
-use lazy_static::lazy_static;
+
 use ropey::Rope;
 use std::mem;
-use tree_sitter_c2rust::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, Tree};
-use tree_sitter_rust::HIGHLIGHT_QUERY;
+use tree_sitter_c2rust::{
+    InputEdit, Language, Node, Parser, Point, Query, QueryCursor, Range, Tree,
+};
 
-pub fn use_buffer<'a, T>(cx: Scope<T>, make_text: impl FnOnce() -> &'a str) -> Signal<Buffer> {
-    use_signal(cx, || Buffer::new(make_text()))
+pub fn use_buffer<'a, T>(
+    cx: Scope<T>,
+    language: Language,
+    make_text: impl FnOnce() -> &'a str,
+) -> Signal<Buffer> {
+    use_signal(cx, || Buffer::new(language, make_text()))
 }
 
 #[derive(Debug)]
@@ -21,10 +26,11 @@ pub struct Buffer {
     pub rope: Rope,
     parser: Parser,
     tree: Tree,
+    language: Language,
 }
 
 impl Buffer {
-    pub fn new(text: &str) -> Self {
+    pub fn new(language: Language, text: &str) -> Self {
         let mut parser = Parser::new();
         parser.set_language(tree_sitter_rust::language()).unwrap();
         let tree = parser.parse(text, None).unwrap();
@@ -33,6 +39,7 @@ impl Buffer {
             rope: Rope::from_str(text),
             parser,
             tree,
+            language,
         }
     }
 
@@ -73,8 +80,8 @@ impl Buffer {
         mem::replace(&mut self.tree, tree)
     }
 
-    pub fn lines(&self) -> Vec<Vec<Span>> {
-        let highlights = self.highlights();
+    pub fn lines(&self, query: &Query) -> Vec<Vec<Span>> {
+        let highlights = self.highlights(query);
 
         self.rope
             .lines()
@@ -127,15 +134,10 @@ impl Buffer {
             .collect()
     }
 
-    fn highlights(&self) -> Vec<Item> {
-        lazy_static! {
-            static ref QUERY: Query =
-                Query::new(tree_sitter_rust::language(), HIGHLIGHT_QUERY).unwrap();
-        }
-
+    fn highlights(&self, query: &Query) -> Vec<Item> {
         let mut query_cursor = QueryCursor::new();
         let rope = &self.rope;
-        let matches = query_cursor.matches(&QUERY, self.tree.root_node(), move |node: Node| {
+        let matches = query_cursor.matches(&query, self.tree.root_node(), move |node: Node| {
             rope.get_byte_slice(node.start_byte()..node.end_byte())
                 .map(|slice| slice.chunks().map(move |chunk| chunk.as_bytes()))
                 .into_iter()

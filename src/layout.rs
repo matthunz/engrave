@@ -23,7 +23,7 @@ pub struct Layout {
     canvas: HtmlCanvasElement,
     char_widths: HashMap<char, f64>,
     font_size: f64,
-    line_height: f64
+    line_height: f64,
 }
 
 impl Layout {
@@ -41,7 +41,7 @@ impl Layout {
             canvas,
             char_widths: HashMap::new(),
             font_size,
-            line_height
+            line_height,
         }
     }
 
@@ -73,7 +73,11 @@ impl Layout {
                     })
                     .collect();
 
-                Line { chars, height: self.line_height, y }
+                Line {
+                    chars,
+                    height: self.line_height,
+                    y,
+                }
             })
             .collect();
     }

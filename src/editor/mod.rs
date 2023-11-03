@@ -39,7 +39,7 @@ pub fn Editor(
     let mut y = 0.;
     for (line_idx, (spans, line)) in editor
         .buffer()
-        .lines()
+        .lines(&editor.query.read())
         .into_iter()
         .zip(layout_ref.lines())
         .enumerate()

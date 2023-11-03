@@ -3,7 +3,9 @@ use engrave::{use_editor, Editor};
 use log::LevelFilter;
 
 fn app(cx: Scope) -> Element {
-    let editor = use_editor(cx, || include_str!("editor.rs"));
+    let editor = use_editor(cx, tree_sitter_rust::language(), || {
+        include_str!("editor.rs")
+    });
 
     render!(Editor { editor: editor })
 }

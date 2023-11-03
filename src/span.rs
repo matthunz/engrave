@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+/// Span of text with an optional node kind.
 #[derive(Clone, Debug, Eq)]
 pub struct Span {
     pub kind: Option<Rc<str>>,
@@ -14,8 +15,12 @@ impl Span {
         }
     }
 
-    pub fn text(text: impl Into<Rc<str>>) -> Self {
+    pub fn from_text(text: impl Into<Rc<str>>) -> Self {
         Self::new(None, text)
+    }
+
+    pub fn from_kind(kind: impl Into<Rc<str>>, text: impl Into<Rc<str>>) -> Self {
+        Self::new(Some(kind.into()), text)
     }
 }
 

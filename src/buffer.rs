@@ -105,12 +105,12 @@ impl Buffer {
                             }
                             if let Some(end) = end {
                                 if start < col {
-                                    spans.push(Span::text(line.slice(start..col).to_string()))
+                                    spans.push(Span::from_text(line.slice(start..col).to_string()))
                                 }
                                 start = end;
 
-                                spans.push(Span::new(
-                                    Some(Rc::from(&*highlight.kind)),
+                                spans.push(Span::from_kind(
+                                    &*highlight.kind,
                                     line.slice(col..end).to_string(),
                                 ))
                             }
@@ -118,7 +118,7 @@ impl Buffer {
                     }
                 }
 
-                spans.push(Span::text(line.slice(start..).to_string()));
+                spans.push(Span::from_text(line.slice(start..).to_string()));
                 spans
             })
             .collect()

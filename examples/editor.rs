@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use editor::{use_buffer, Editor};
+use engrave::{use_buffer, Editor};
 use log::LevelFilter;
 
 fn app(cx: Scope) -> Element {

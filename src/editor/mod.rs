@@ -18,10 +18,10 @@ pub fn Editor(cx: Scope, buffer: Signal<Buffer>) -> Element {
     let cursor = use_signal(cx, || Point::new(0, 0));
     let is_focused = use_signal(cx, || false);
 
-    let layout_ref = layout();
-    let mut y = 0.;
     let mut line_numbers = Vec::new();
     let mut lines = Vec::new();
+    let layout_ref = layout();
+    let mut y = 0.;
     for (line_idx, (spans, line)) in buffer()
         .lines()
         .into_iter()

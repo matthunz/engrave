@@ -10,12 +10,25 @@ use line::Line;
 mod use_editor;
 pub use use_editor::{use_editor, UseEditor};
 
+/// Text editor
 #[component]
-pub fn Editor(cx: Scope, editor: UseEditor) -> Element {
-    let container_ref: Signal<Option<Rc<MountedData>>> = use_signal(cx, || None);
-    let layout = use_signal(cx, || Layout::new());
+pub fn Editor(
+    cx: Scope,
+    editor: UseEditor,
 
-    to_owned![editor];
+    /// Font size of the editor text.
+    #[props(default = 14.)]
+    font_size: f64,
+
+    /// Font size of the editor text.
+    #[props(default = 24.)]
+    line_height: f64,
+) -> Element {
+    to_owned![editor, font_size, line_height];
+
+    let container_ref: Signal<Option<Rc<MountedData>>> = use_signal(cx, || None);
+    let layout = use_signal(cx, || Layout::new(font_size, line_height));
+
     dioxus_signals::use_effect(cx, move || {
         layout.write().measure(editor.buffer().rope.lines())
     });
@@ -73,7 +86,7 @@ pub fn Editor(cx: Scope, editor: UseEditor) -> Element {
             width: "800px",
             height: "600px",
             margin: "50px auto",
-            font: "16px monospace",
+            font: "{font_size}px monospace",
             line_height: "26px",
             border: "2px solid #ccc",
             overflow: "auto",

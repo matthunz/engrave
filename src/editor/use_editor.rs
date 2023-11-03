@@ -1,8 +1,7 @@
-use std::cell::Ref;
-
 use crate::{use_buffer, Buffer};
 use dioxus::prelude::Scope;
 use dioxus_signals::{use_signal, Signal, Write};
+use std::cell::Ref;
 use tree_sitter_c2rust::Point;
 
 pub fn use_editor<'a, T>(cx: Scope<T>, make_text: impl FnOnce() -> &'a str) -> UseEditor {

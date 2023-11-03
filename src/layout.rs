@@ -22,10 +22,12 @@ pub struct Layout {
     lines: Vec<Line>,
     canvas: HtmlCanvasElement,
     char_widths: HashMap<char, f64>,
+    font_size: f64,
+    line_height: f64
 }
 
 impl Layout {
-    pub fn new() -> Self {
+    pub fn new(font_size: f64, line_height: f64) -> Self {
         let elem = window()
             .unwrap()
             .document()
@@ -38,19 +40,20 @@ impl Layout {
             lines: Vec::new(),
             canvas,
             char_widths: HashMap::new(),
+            font_size,
+            line_height
         }
     }
 
     pub fn measure<'a>(&mut self, lines: impl Iterator<Item = RopeSlice<'a>>) {
         let cx_object = self.canvas.get_context("2d").unwrap().unwrap();
         let cx = cx_object.unchecked_ref::<CanvasRenderingContext2d>();
-        cx.set_font("16px monospace");
+        cx.set_font(&format!("{}px monospace", self.font_size));
 
-        let height = 26.;
         self.lines = lines
             .enumerate()
             .map(|(idx, line)| {
-                let y = idx as f64 * height;
+                let y = idx as f64 * self.line_height;
                 let mut current_x = 0.;
                 let chars = line
                     .chars()
@@ -70,7 +73,7 @@ impl Layout {
                     })
                     .collect();
 
-                Line { chars, height, y }
+                Line { chars, height: self.line_height, y }
             })
             .collect();
     }

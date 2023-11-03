@@ -1,5 +1,5 @@
-# Editor
-Text editor for desktop and the web with Dioxus
+# Engrave
+Text editor for desktop and the web with Rust and Dioxus.
 
 ```rust
 use dioxus::prelude::*;

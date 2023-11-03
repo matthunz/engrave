@@ -15,6 +15,7 @@ pub struct Char {
 pub struct Line {
     pub chars: Vec<Char>,
     pub height: f64,
+    pub y: f64,
 }
 
 pub struct Layout {
@@ -49,6 +50,7 @@ impl Layout {
         self.lines = lines
             .enumerate()
             .map(|(idx, line)| {
+                let y = idx as f64 * height;
                 let mut current_x = 0.;
                 let chars = line
                     .chars()
@@ -64,15 +66,11 @@ impl Layout {
                         let x = current_x;
                         current_x += width;
 
-                        Char {
-                            c,
-                            width,
-                            x,
-                            y: idx as f64 * height,
-                        }
+                        Char { c, width, x, y }
                     })
                     .collect();
-                Line { chars, height }
+
+                Line { chars, height, y }
             })
             .collect();
     }

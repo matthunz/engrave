@@ -3,7 +3,7 @@ use dioxus::prelude::Scope;
 use dioxus_signals::{use_signal, Signal};
 use lazy_static::lazy_static;
 use ropey::Rope;
-use std::{mem, rc::Rc};
+use std::mem;
 use tree_sitter_c2rust::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, Tree};
 use tree_sitter_rust::HIGHLIGHT_QUERY;
 

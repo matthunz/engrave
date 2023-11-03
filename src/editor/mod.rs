@@ -1,4 +1,4 @@
-use crate::{layout::Layout, Buffer};
+use crate::layout::Layout;
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
 use dioxus_signals::{use_signal, Signal};
 use std::rc::Rc;
@@ -7,22 +7,25 @@ use tree_sitter_c2rust::Point;
 mod line;
 use line::Line;
 
+mod use_editor;
+pub use use_editor::{use_editor, UseEditor};
+
 #[component]
-pub fn Editor(cx: Scope, buffer: Signal<Buffer>) -> Element {
+pub fn Editor(cx: Scope, editor: UseEditor) -> Element {
     let container_ref: Signal<Option<Rc<MountedData>>> = use_signal(cx, || None);
     let layout = use_signal(cx, || Layout::new());
 
-    to_owned![buffer];
-    dioxus_signals::use_effect(cx, move || layout.write().measure(buffer().rope.lines()));
-
-    let cursor = use_signal(cx, || Point::new(0, 0));
-    let is_focused = use_signal(cx, || false);
+    to_owned![editor];
+    dioxus_signals::use_effect(cx, move || {
+        layout.write().measure(editor.buffer().rope.lines())
+    });
 
     let mut line_numbers = Vec::new();
     let mut lines = Vec::new();
     let layout_ref = layout();
     let mut y = 0.;
-    for (line_idx, (spans, line)) in buffer()
+    for (line_idx, (spans, line)) in editor
+        .buffer()
         .lines()
         .into_iter()
         .zip(layout_ref.lines())
@@ -39,12 +42,29 @@ pub fn Editor(cx: Scope, buffer: Signal<Buffer>) -> Element {
             spans: spans,
             top: top,
             height: line.height,
-            is_selected: *is_focused() && line_idx == cursor().row
+            is_selected: editor.is_focused() && line_idx == editor.cursor().row
         });
         lines.push(line);
     }
 
-    let cursor_pos = layout_ref.pos(cursor().clone()).unwrap_or_default();
+    let onkeydown = move |event: KeyboardEvent| match event.key() {
+        Key::Character(text) => editor.insert(&text),
+        Key::Enter => {
+            let mut cursor_ref = editor.cursor_mut();
+            editor
+                .buffer_mut()
+                .insert(cursor_ref.row, cursor_ref.column, "\n");
+            cursor_ref.row += 1;
+        }
+        Key::ArrowUp => {
+            let mut cursor_ref = editor.cursor_mut();
+            cursor_ref.row = cursor_ref.row.saturating_sub(1);
+        }
+        Key::ArrowDown => editor.cursor_mut().row += 1,
+        _ => {}
+    };
+
+    let cursor_pos = layout_ref.pos(editor.cursor()).unwrap_or_default();
     render!(
         div {
             position: "relative",
@@ -63,33 +83,12 @@ pub fn Editor(cx: Scope, buffer: Signal<Buffer>) -> Element {
             onclick: move |_| async move {
                 if let Some(mounted) = &*container_ref() {
                     mounted.set_focus(true).await.unwrap();
-                    is_focused.set(true);
+                    editor.focus();
                 }
             },
-            onfocusin: move |_| is_focused.set(true),
-            onfocusout: move |_| is_focused.set(false),
-            onkeydown: move |event| {
-                match event.key() {
-                    Key::Character(text) => {
-                        let mut cursor_ref = cursor.write();
-                        buffer.write().insert(cursor_ref.row, cursor_ref.column, &text);
-                        cursor_ref.column += text.len();
-                    }
-                    Key::Enter => {
-                        let mut cursor_ref = cursor.write();
-                        buffer.write().insert(cursor_ref.row, cursor_ref.column, "\n");
-                        cursor_ref.row += 1;
-                    }
-                    Key::ArrowUp => {
-                        let mut cursor_ref = cursor.write();
-                        cursor_ref.row = cursor_ref.row.saturating_sub(1);
-                    }
-                    Key::ArrowDown => {
-                        cursor.write().row += 1;
-                    }
-                    _ => {}
-                }
-            },
+            onfocusin: move |_| editor.focus(),
+            onfocusout: move |_| editor.blur(),
+            onkeydown: onkeydown,
             div { position: "relative", width: "50px", line_numbers.into_iter() }
             div {
                 flex: 1,
@@ -105,11 +104,8 @@ pub fn Editor(cx: Scope, buffer: Signal<Buffer>) -> Element {
                                 event.client_coordinates().y - bounds.origin.y,
                             )
                     {
-                        if let Some(col) = col_cell {
-                            cursor.set(Point::new(line, col));
-                        } else {
-                            cursor.set(Point::new(line, 0));
-                        }
+                        let col = col_cell.unwrap_or_default();
+                        *editor.cursor_mut() = Point::new(line, col);
                     }
                 },
                 div {
@@ -120,7 +116,7 @@ pub fn Editor(cx: Scope, buffer: Signal<Buffer>) -> Element {
                     height: "24px",
                     class: "cursor",
                     z_index: 9,
-                    display: if *is_focused() { "block" } else { "none" }
+                    display: if editor.is_focused() { "block" } else { "none" }
                 }
                 lines.into_iter()
             }

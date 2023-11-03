@@ -2,7 +2,7 @@ mod buffer;
 pub use buffer::{use_buffer, Buffer};
 
 mod editor;
-pub use editor::Editor;
+pub use editor::{use_editor, Editor, UseEditor};
 
 mod layout;
 

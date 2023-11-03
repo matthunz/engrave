@@ -1,11 +1,11 @@
 use dioxus::prelude::*;
-use engrave::{use_buffer, Editor};
+use engrave::{use_editor, Editor};
 use log::LevelFilter;
 
 fn app(cx: Scope) -> Element {
-    let buffer = use_buffer(cx, || include_str!("editor.rs"));
+    let editor = use_editor(cx, || include_str!("editor.rs"));
 
-    render!(Editor { buffer: buffer })
+    render!(Editor { editor: editor })
 }
 
 fn main() {

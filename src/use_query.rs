@@ -1,7 +1,7 @@
+use crate::Language;
 use dioxus::prelude::{use_context, use_effect, Scope};
 use dioxus_signals::{use_signal, Signal};
-use tree_sitter_c2rust::{ Query};
-use crate::Language;
+use tree_sitter_c2rust::Query;
 
 pub fn use_language<T>(cx: Scope<T>) -> Signal<Language> {
     *use_context(cx).unwrap()

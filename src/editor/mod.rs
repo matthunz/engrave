@@ -5,7 +5,6 @@ use dioxus_signals::{use_signal, Signal};
 use dioxus_use_mounted::use_mounted;
 use std::rc::Rc;
 use tree_sitter_c2rust::Point;
-use wasm_bindgen::JsCast;
 
 mod line;
 use line::Line;
@@ -50,7 +49,7 @@ pub fn Editor(
         .row
         .checked_sub(top_line)
         .map(|row| Point::new(row, point.column));
-    let cursor_pos = cursor_point.map(|point| layout_ref.pos(point).unwrap_or_default());
+    let cursor_pos = cursor_point.map(|_| layout_ref.pos(point).unwrap_or_default());
 
     let mut line_numbers = Vec::new();
     let mut lines = Vec::new();
@@ -66,7 +65,9 @@ pub fn Editor(
         let top = y;
         y += line.height;
 
-        let line_number = render!(div { position: "absolute", top: "{top}px", right: 0, line_height: "inherit", "{line_idx + top_line + 1}" });
+        let line_number = render!(
+            div { position: "absolute", top: "{top}px", right: 0, line_height: "inherit", "{line_idx + top_line + 1}" }
+        );
         line_numbers.push(line_number);
 
         let is_selected = if let Some(point) = cursor_point {
@@ -75,13 +76,15 @@ pub fn Editor(
             false
         };
 
-        let line = render!(Line {
-            key: "{line_idx}",
-            spans: spans,
-            top: top,
-            height: line.height,
-            is_selected: is_selected
-        });
+        let line = render!(
+            Line {
+                key: "{line_idx}",
+                spans: spans,
+                top: top,
+                height: line.height,
+                is_selected: is_selected
+            }
+        );
         lines.push(line);
     }
 
@@ -109,6 +112,8 @@ pub fn Editor(
             scroll.set(elem.scroll_top());
         }
     };
+
+    let height = editor.buffer().rope.len_lines() as f64 * line_height;
 
     render!(
         div {
@@ -141,7 +146,7 @@ pub fn Editor(
                 flex: 1,
                 position: "relative",
                 margin_left: "50px",
-                height: "1000px",
+                height: "{height}px",
                 onmounted: move |event| lines_ref.set(Some(event.data)),
                 onmousedown: move |event| async move {
                     let bounds = lines_ref().as_ref().unwrap().get_client_rect().await.unwrap();

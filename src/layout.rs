@@ -91,10 +91,10 @@ impl Layout {
         Some([line_char.x, line_char.y])
     }
 
-    pub fn line(&self, y: f64) -> Option<usize>{
+    pub fn line(&self, y: f64) -> Option<usize> {
         let mut current_y = 0.;
         for (idx, line) in self.lines.iter().enumerate() {
-           current_y += line.height;
+            current_y += line.height;
             if current_y >= y {
                 return Some(idx);
             }

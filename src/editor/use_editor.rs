@@ -89,7 +89,7 @@ impl UseEditor {
         let mut cursor_ref = self.cursor.write();
         self.buffer
             .write()
-            .insert(cursor_ref.row, cursor_ref.column, &text);
+            .insert(cursor_ref.row, cursor_ref.column, text);
         cursor_ref.column += text.len();
     }
 }

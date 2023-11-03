@@ -95,33 +95,31 @@ impl Buffer {
                         let start_point = highlight.range.start_point;
                         let end_point = highlight.range.end_point;
 
-                        if start_point.row <= idx && end_point.row >= idx {
-                            if start_point.column <= col && end_point.column > col {
-                                let mut end = None;
-                                while let Some((next_col, _)) = iter.peek() {
-                                    if start_point.column <= *next_col
-                                        && end_point.column > *next_col
-                                    {
-                                        iter.next();
-                                    } else {
-                                        end = Some(*next_col);
-                                        break;
-                                    }
+                        if start_point.row <= idx
+                            && end_point.row >= idx
+                            && start_point.column <= col
+                            && end_point.column > col
+                        {
+                            let mut end = None;
+                            while let Some((next_col, _)) = iter.peek() {
+                                if start_point.column <= *next_col && end_point.column > *next_col {
+                                    iter.next();
+                                } else {
+                                    end = Some(*next_col);
+                                    break;
                                 }
+                            }
 
-                                if let Some(end) = end {
-                                    if start < col {
-                                        spans.push(Span::from_text(
-                                            line.slice(start..col).to_string(),
-                                        ));
-                                    }
-                                    start = end;
-
-                                    spans.push(Span::from_kind(
-                                        &*highlight.kind,
-                                        line.slice(col..end).to_string(),
-                                    ))
+                            if let Some(end) = end {
+                                if start < col {
+                                    spans.push(Span::from_text(line.slice(start..col).to_string()));
                                 }
+                                start = end;
+
+                                spans.push(Span::from_kind(
+                                    &*highlight.kind,
+                                    line.slice(col..end).to_string(),
+                                ))
                             }
                         }
                     }
@@ -136,7 +134,7 @@ impl Buffer {
     fn highlights(&self, query: &Query) -> Vec<Item> {
         let mut query_cursor = QueryCursor::new();
         let rope = &self.rope;
-        let matches = query_cursor.matches(&query, self.tree.root_node(), move |node: Node| {
+        let matches = query_cursor.matches(query, self.tree.root_node(), move |node: Node| {
             rope.get_byte_slice(node.start_byte()..node.end_byte())
                 .map(|slice| slice.chunks().map(move |chunk| chunk.as_bytes()))
                 .into_iter()

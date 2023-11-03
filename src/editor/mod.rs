@@ -42,7 +42,7 @@ pub fn Editor(
         .map(|row| Point::new(row, point.column));
     let cursor_pos = cursor_point.map(|_| layout_ref.pos(point).unwrap_or_default());
 
-    let line_values = use_signal(cx, || Vec::new());
+    let line_values = use_signal(cx, Vec::new);
     dioxus_signals::use_effect(cx, move || {
         let layout_ref = layout();
         let top_line = layout_ref.line(editor.scroll() as _).unwrap_or_default();
@@ -61,7 +61,7 @@ pub fn Editor(
             .buffer()
             .lines(&editor.query.read(), top_line..top_line + bottom_line)
             .into_iter()
-            .zip(layout_ref.lines().into_iter().cloned())
+            .zip(layout_ref.lines().iter().cloned())
             .enumerate()
             .collect();
         line_values.set(values)
@@ -137,7 +137,8 @@ pub fn Editor(
             prevent_default: "onkeydown",
             onmounted: move |event| editor.container_ref.onmounted(event),
             onclick: move |_| async move {
-                if let Some(mounted) = &*editor.container_ref.signal.read() {
+                let mounted = editor.container_ref.signal.read().clone();
+                if let Some(mounted) = mounted {
                     mounted.set_focus(true).await.unwrap();
                     editor.focus();
                 }
@@ -154,7 +155,8 @@ pub fn Editor(
                 height: "{height}px",
                 onmounted: move |event| lines_ref.set(Some(event.data)),
                 onmousedown: move |event| async move {
-                    let bounds = lines_ref().as_ref().unwrap().get_client_rect().await.unwrap();
+                    let lines_elem = lines_ref.unwrap();
+                    let bounds = lines_elem.get_client_rect().await.unwrap();
                     if let Some((line, col_cell))
                         = layout()
                             .target(

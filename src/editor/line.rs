@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn Line(cx: Scope, spans: Vec<Span>, is_selected: bool, top: f64, height: f64) -> Element {
-    let spans = spans.into_iter().enumerate().map(|(span_idx, span)| {
+    let spans = spans.iter().enumerate().map(|(span_idx, span)| {
         render!(LineSpan {
             key: "{span_idx}",
             span: span.clone()
@@ -28,8 +28,8 @@ pub fn Line(cx: Scope, spans: Vec<Span>, is_selected: bool, top: f64, height: f6
 
 #[component]
 fn LineSpan(cx: Scope, span: Span) -> Element {
-    let color = match span.kind.as_deref() {
-        Some(s) => match &*s {
+    let color = match span.kind {
+        Some(ref s) => match &**s {
             "fn" | "struct" | "pub" | "use" | "let" | "match" | "async" | "unsafe" | "move" => {
                 "rgb(207, 34, 46)"
             }

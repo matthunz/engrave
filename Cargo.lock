@@ -228,7 +228,7 @@ dependencies = [
 [[package]]
 name = "dioxus"
 version = "0.4.2"
-source = "git+https://github.com/dioxuslabs/dioxus#bf36fc6def522c75f0f608d5c6a779ca1477f1ec"
+source = "git+https://github.com/dioxuslabs/dioxus#a3e6d0adcaee49495db5c324dbf9f20d5ec529ed"
 dependencies = [
  "dioxus-core",
  "dioxus-core-macro",
@@ -241,7 +241,7 @@ dependencies = [
 [[package]]
 name = "dioxus-core"
 version = "0.4.2"
-source = "git+https://github.com/dioxuslabs/dioxus#bf36fc6def522c75f0f608d5c6a779ca1477f1ec"
+source = "git+https://github.com/dioxuslabs/dioxus#a3e6d0adcaee49495db5c324dbf9f20d5ec529ed"
 dependencies = [
  "bumpalo",
  "futures-channel",
@@ -257,7 +257,7 @@ dependencies = [
 [[package]]
 name = "dioxus-core-macro"
 version = "0.4.2"
-source = "git+https://github.com/dioxuslabs/dioxus#bf36fc6def522c75f0f608d5c6a779ca1477f1ec"
+source = "git+https://github.com/dioxuslabs/dioxus#a3e6d0adcaee49495db5c324dbf9f20d5ec529ed"
 dependencies = [
  "constcat",
  "dioxus-core",
@@ -277,7 +277,7 @@ checksum = "2ea539174bb236e0e7dc9c12b19b88eae3cb574dedbd0252a2d43ea7e6de13e2"
 [[package]]
 name = "dioxus-hooks"
 version = "0.4.2"
-source = "git+https://github.com/dioxuslabs/dioxus#bf36fc6def522c75f0f608d5c6a779ca1477f1ec"
+source = "git+https://github.com/dioxuslabs/dioxus#a3e6d0adcaee49495db5c324dbf9f20d5ec529ed"
 dependencies = [
  "dioxus-core",
  "dioxus-debug-cell",
@@ -290,7 +290,7 @@ dependencies = [
 [[package]]
 name = "dioxus-hot-reload"
 version = "0.4.2"
-source = "git+https://github.com/dioxuslabs/dioxus#bf36fc6def522c75f0f608d5c6a779ca1477f1ec"
+source = "git+https://github.com/dioxuslabs/dioxus#a3e6d0adcaee49495db5c324dbf9f20d5ec529ed"
 dependencies = [
  "dioxus-core",
  "dioxus-html",
@@ -303,7 +303,7 @@ dependencies = [
 [[package]]
 name = "dioxus-html"
 version = "0.4.2"
-source = "git+https://github.com/dioxuslabs/dioxus#bf36fc6def522c75f0f608d5c6a779ca1477f1ec"
+source = "git+https://github.com/dioxuslabs/dioxus#a3e6d0adcaee49495db5c324dbf9f20d5ec529ed"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -322,7 +322,7 @@ dependencies = [
 [[package]]
 name = "dioxus-interpreter-js"
 version = "0.4.2"
-source = "git+https://github.com/dioxuslabs/dioxus#bf36fc6def522c75f0f608d5c6a779ca1477f1ec"
+source = "git+https://github.com/dioxuslabs/dioxus#a3e6d0adcaee49495db5c324dbf9f20d5ec529ed"
 dependencies = [
  "js-sys",
  "sledgehammer_bindgen",
@@ -342,9 +342,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus-resize-observer"
+version = "0.1.0"
+source = "git+https://github.com/dioxus-community/dioxus-resize-observer#481585f6100075996782910b8a91e34c77573370"
+dependencies = [
+ "dioxus",
+ "dioxus-signals",
+ "dioxus-use-mounted",
+ "dioxus-web",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "dioxus-rsx"
 version = "0.4.2"
-source = "git+https://github.com/dioxuslabs/dioxus#bf36fc6def522c75f0f608d5c6a779ca1477f1ec"
+source = "git+https://github.com/dioxuslabs/dioxus#a3e6d0adcaee49495db5c324dbf9f20d5ec529ed"
 dependencies = [
  "dioxus-core",
  "proc-macro2",
@@ -355,7 +369,7 @@ dependencies = [
 [[package]]
 name = "dioxus-signals"
 version = "0.0.0"
-source = "git+https://github.com/dioxuslabs/dioxus#bf36fc6def522c75f0f608d5c6a779ca1477f1ec"
+source = "git+https://github.com/dioxuslabs/dioxus#a3e6d0adcaee49495db5c324dbf9f20d5ec529ed"
 dependencies = [
  "dioxus-core",
  "generational-box",
@@ -364,9 +378,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus-use-mounted"
+version = "0.1.0"
+source = "git+https://github.com/matthunz/dioxus-use-mounted#7f27c94bb6b2e63f175aeab06b671c0940e4bd15"
+dependencies = [
+ "dioxus",
+ "dioxus-signals",
+ "dioxus-web",
+]
+
+[[package]]
 name = "dioxus-web"
 version = "0.4.2"
-source = "git+https://github.com/dioxuslabs/dioxus#bf36fc6def522c75f0f608d5c6a779ca1477f1ec"
+source = "git+https://github.com/dioxuslabs/dioxus#a3e6d0adcaee49495db5c324dbf9f20d5ec529ed"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -394,7 +418,9 @@ dependencies = [
  "console_error_panic_hook",
  "dioxus",
  "dioxus-logger",
+ "dioxus-resize-observer",
  "dioxus-signals",
+ "dioxus-use-mounted",
  "dioxus-web",
  "js-sys",
  "lazy_static",
@@ -530,7 +556,7 @@ dependencies = [
 [[package]]
 name = "generational-box"
 version = "0.0.0"
-source = "git+https://github.com/dioxuslabs/dioxus#bf36fc6def522c75f0f608d5c6a779ca1477f1ec"
+source = "git+https://github.com/dioxuslabs/dioxus#a3e6d0adcaee49495db5c324dbf9f20d5ec529ed"
 dependencies = [
  "bumpalo",
 ]

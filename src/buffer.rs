@@ -77,13 +77,15 @@ impl Buffer {
         mem::replace(&mut self.tree, tree)
     }
 
-    pub fn lines(&self, query: &Query) -> Vec<Vec<Span>> {
+    pub fn lines(&self, query: &Query, range: std::ops::Range<usize>) -> Vec<Vec<Span>> {
         let highlights = self.highlights(query);
 
         self.rope
-            .lines()
+            .lines_at(range.start)
+            .take(range.end - range.start)
             .enumerate()
             .map(|(idx, line)| {
+                let idx = idx + range.start;
                 let mut spans = Vec::new();
                 let mut iter = line.chars().enumerate().peekable();
                 let mut start = 0;

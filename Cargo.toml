@@ -9,6 +9,8 @@ license = "MIT OR Apache-2.0"
 dioxus = { git = "https://github.com/dioxuslabs/dioxus" }
 dioxus-web = { git = "https://github.com/dioxuslabs/dioxus" }
 dioxus-signals = { git = "https://github.com/dioxuslabs/dioxus" }
+dioxus-resize-observer = { git = "https://github.com/dioxus-community/dioxus-resize-observer" }
+dioxus-use-mounted = { git = "https://github.com/matthunz/dioxus-use-mounted" }
 log = "0.4.19"
 dioxus-logger = "0.4.1"
 console_error_panic_hook = "0.1.7"

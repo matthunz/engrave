@@ -91,6 +91,17 @@ impl Layout {
         Some([line_char.x, line_char.y])
     }
 
+    pub fn line(&self, y: f64) -> Option<usize>{
+        let mut current_y = 0.;
+        for (idx, line) in self.lines.iter().enumerate() {
+           current_y += line.height;
+            if current_y >= y {
+                return Some(idx);
+            }
+        }
+        None
+    }
+
     pub fn target(&self, x: f64, y: f64) -> Option<(usize, Option<usize>)> {
         let mut current_y = 0.;
         for (line_idx, line) in self.lines.iter().enumerate() {

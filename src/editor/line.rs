@@ -33,12 +33,12 @@ fn LineSpan(cx: Scope, span: Span) -> Element {
             "fn" | "struct" | "pub" | "use" | "let" | "match" | "async" | "unsafe" | "move" => {
                 "rgb(207, 34, 46)"
             }
-            "attribute_item" | "identifier" | "type_identifier" => "rgb(96, 59, 179)",
+            "attribute_item" | "identifier" | "type_identifier" | "!" => "rgb(96, 59, 179)",
             "primitive_type" | "boolean_identifier" | "::" | "*" => "rgb(5, 80, 174)",
-            "string_literal" => "rgb(7, 69, 124)",
+            "string_literal" | "integer_literal" => "rgb(7, 69, 124)",
             "{" | "}" => "#076678",
             "(" | ")" | "|" | "=>" => "#faa356",
-            ";" => "#ccc",
+            ";" | "," => "#ccc",
             _ => "#000",
         },
         _ => "#000",

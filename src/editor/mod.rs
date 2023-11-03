@@ -35,8 +35,6 @@ pub fn Editor(
 
     let layout_ref = layout();
     let top_line = layout_ref.line(editor.scroll() as _).unwrap_or_default();
-    let bottom_line = top_line + (editor.container_height / line_height).floor() as usize + 1;
-
     let point = editor.cursor();
     let cursor_point = point
         .row
@@ -44,16 +42,35 @@ pub fn Editor(
         .map(|row| Point::new(row, point.column));
     let cursor_pos = cursor_point.map(|_| layout_ref.pos(point).unwrap_or_default());
 
+    let line_values = use_signal(cx, || Vec::new());
+    dioxus_signals::use_effect(cx, move || {
+        let layout_ref = layout();
+        let top_line = layout_ref.line(editor.scroll() as _).unwrap_or_default();
+        let bottom_line = top_line
+            + (editor
+                .container_size
+                .read()
+                .as_ref()
+                .map(|rect| rect.height())
+                .unwrap_or_default()
+                / line_height)
+                .floor() as usize
+            + 1;
+
+        let values = editor
+            .buffer()
+            .lines(&editor.query.read(), top_line..top_line + bottom_line)
+            .into_iter()
+            .zip(layout_ref.lines().into_iter().cloned())
+            .enumerate()
+            .collect();
+        line_values.set(values)
+    });
+
     let mut line_numbers = Vec::new();
     let mut lines = Vec::new();
     let mut y = top_line as f64 * line_height;
-    for (line_idx, (spans, line)) in editor
-        .buffer()
-        .lines(&editor.query.read(), top_line..top_line + bottom_line)
-        .into_iter()
-        .zip(layout_ref.lines())
-        .enumerate()
-    {
+    for (line_idx, (spans, line)) in line_values {
         let top = y;
         y += line.height;
 

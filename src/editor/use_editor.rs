@@ -1,6 +1,6 @@
 use crate::{use_buffer, use_query, Buffer, Language};
 use dioxus::prelude::{use_context_provider, use_effect, Scope};
-use dioxus_resize_observer::use_size;
+use dioxus_resize_observer::{use_resize, Rect};
 use dioxus_signals::{use_signal, Signal, Write};
 use dioxus_use_mounted::{use_mounted, UseMounted};
 use std::cell::Ref;
@@ -24,7 +24,7 @@ pub fn use_editor<'a, T>(
     let scroll = use_signal(cx, || 0);
 
     let container_ref = use_mounted(cx);
-    let container_size = use_size(cx, container_ref);
+    let container_size = use_resize(cx, container_ref);
 
     UseEditor {
         buffer,
@@ -32,7 +32,7 @@ pub fn use_editor<'a, T>(
         is_focused,
         query,
         container_ref,
-        container_height: container_size.height(),
+        container_size,
         scroll,
     }
 }
@@ -44,7 +44,7 @@ pub struct UseEditor {
     is_focused: Signal<bool>,
     pub(crate) query: Signal<Query>,
     pub container_ref: UseMounted,
-    pub container_height: f64,
+    pub container_size: Signal<Option<Rect>>,
     scroll: Signal<i32>,
 }
 

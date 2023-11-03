@@ -4,6 +4,7 @@ use tree_sitter_c2rust::Point;
 use wasm_bindgen::JsCast;
 use web_sys::{window, CanvasRenderingContext2d, HtmlCanvasElement};
 
+#[derive(Clone)]
 pub struct Char {
     pub c: char,
     pub width: f64,
@@ -11,6 +12,7 @@ pub struct Char {
     pub y: f64,
 }
 
+#[derive(Clone)]
 pub struct Line {
     pub chars: Vec<Char>,
     pub height: f64,

@@ -3,12 +3,13 @@ Text editor for desktop and the web with Rust and Dioxus.
 
 ```rust
 use dioxus::prelude::*;
-use editor::{language, use_editor, Editor};
+use engrave::{language, Editor, UseEditor};
 
 fn app(cx: Scope) -> Element {
-    let editor = use_editor(cx, language::rust(), || {
-        include_str!("../src/editor/use_editor.rs")
-    });
+    let editor = UseEditor::builder()
+        .language(language::rust())
+        .height(600.)
+        .use_editor(cx, || include_str!("../src/editor/use_editor.rs"));
 
     render!(Editor { editor: editor })
 }

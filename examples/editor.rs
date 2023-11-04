@@ -1,15 +1,12 @@
 use dioxus::prelude::*;
-use engrave::{language, use_editor, Editor};
+use engrave::{language, Editor, UseEditor};
 use log::LevelFilter;
 
 fn app(cx: Scope) -> Element {
-    let editor = use_editor(
-        cx,
-        language::rust(),
-        || include_str!("../src/editor/use_editor.rs"),
-        400.,
-        24.,
-    );
+    let editor = UseEditor::builder()
+        .language(language::rust())
+        .height(600.)
+        .use_editor(cx, || include_str!("../src/editor/use_editor.rs"));
 
     render!(Editor { editor: editor })
 }

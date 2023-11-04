@@ -1,4 +1,4 @@
-use crate::{use_buffer, use_query, Buffer, Language, Span};
+use crate::{language, use_buffer, use_query, Buffer, Language, Span};
 use dioxus::prelude::{use_context_provider, use_effect, Scope};
 use dioxus_lazy::{factory, Direction, UseList};
 use dioxus_resize_observer::{use_resize, Rect};
@@ -7,55 +7,80 @@ use dioxus_use_mounted::{use_mounted, UseMounted};
 use std::cell::Ref;
 use tree_sitter_c2rust::{Point, Query};
 
-pub fn use_editor<'a, T>(
-    cx: Scope<T>,
-    language: Language,
-    make_text: impl FnOnce() -> &'a str,
+#[derive(Clone, Copy, PartialEq)]
+pub struct Builder {
+    font_size: f64,
     height: f64,
     line_height: f64,
-) -> UseEditor {
-    let language_signal = use_context_provider(cx, || Signal::new(language));
-    use_effect(cx, &language, |lang| {
-        language_signal.set(lang);
-        async {}
-    });
+    language: Language,
+}
 
-    let buffer = use_buffer(cx, language.tree_sitter, make_text);
-    let cursor = use_signal(cx, || Point::new(0, 0));
-    let is_focused = use_signal(cx, || false);
-    let query = use_query(cx, language.highlight_query);
-    let scroll = use_signal(cx, || 0);
+impl Builder {
+    pub fn font_size(mut self, font_size: f64) -> Self {
+        self.font_size = font_size;
+        self
+    }
 
-    let container_ref = use_mounted(cx);
-    let container_size = use_resize(cx, container_ref);
+    pub fn height(mut self, height: f64) -> Self {
+        self.height = height;
+        self
+    }
 
-    let list = UseList::builder()
-        .direction(Direction::Row)
-        .size(height)
-        .item_size(line_height)
-        .len(buffer().rope.len_lines())
-        .use_list(
-            cx,
-            factory::from_range_fn(move |range, is_rev| async move {
-                let mut lines = buffer().lines(&query(), range);
-                if is_rev {
-                    lines.reverse();
-                }
-                lines
-            }),
-        );
+    pub fn line_height(mut self, line_height: f64) -> Self {
+        self.line_height = line_height;
+        self
+    }
 
-    UseEditor {
-        buffer,
-        cursor,
-        is_focused,
-        query,
-        container_ref,
-        container_size,
-        scroll,
-        list,
-        height,
-        line_height,
+    pub fn language(mut self, language: Language) -> Self {
+        self.language = language;
+        self
+    }
+
+    pub fn use_editor<'a, T>(self, cx: Scope<T>, make_text: impl FnOnce() -> &'a str) -> UseEditor {
+        let language = self.language;
+        let language_signal = use_context_provider(cx, || Signal::new(language));
+        use_effect(cx, &language, |lang| {
+            language_signal.set(lang);
+            async {}
+        });
+
+        let buffer = use_buffer(cx, language.tree_sitter, make_text);
+        let cursor = use_signal(cx, || Point::new(0, 0));
+        let is_focused = use_signal(cx, || false);
+        let query = use_query(cx, language.highlight_query);
+        let scroll = use_signal(cx, || 0);
+
+        let container_ref = use_mounted(cx);
+        let container_size = use_resize(cx, container_ref);
+
+        let list = UseList::builder()
+            .direction(Direction::Row)
+            .size(self.height)
+            .item_size(self.line_height)
+            .len(buffer().rope.len_lines())
+            .use_list(
+                cx,
+                factory::from_range_fn(move |range, is_rev| async move {
+                    let mut lines = buffer().lines(&query(), range);
+                    if is_rev {
+                        lines.reverse();
+                    }
+                    lines
+                }),
+            );
+
+        UseEditor {
+            buffer,
+            cursor,
+            is_focused,
+            query,
+            container_ref,
+            container_size,
+            scroll,
+            list,
+            height: self.height,
+            line_height: self.line_height,
+        }
     }
 }
 
@@ -74,6 +99,15 @@ pub struct UseEditor {
 }
 
 impl UseEditor {
+    pub fn builder() -> Builder {
+        Builder {
+            font_size: 16.,
+            height: 400.,
+            line_height: 24.,
+            language: language::rust(),
+        }
+    }
+
     pub fn buffer(&self) -> Ref<Buffer> {
         self.buffer.read()
     }

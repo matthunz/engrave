@@ -8,7 +8,7 @@ mod line;
 use line::Line;
 
 mod use_editor;
-pub use use_editor::{use_editor, UseEditor};
+pub use use_editor::{Builder, UseEditor};
 
 /// Text editor
 #[component]

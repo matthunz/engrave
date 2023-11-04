@@ -14,3 +14,6 @@ fn app(cx: Scope) -> Element {
     render!(Editor { editor: editor })
 }
 ```
+
+## Examples
+Run examples with Dioxus using `dx serve {example_name}`

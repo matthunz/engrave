@@ -1,5 +1,6 @@
-use crate::{use_buffer, use_query, Buffer, Language};
+use crate::{use_buffer, use_query, Buffer, Language, Span};
 use dioxus::prelude::{use_context_provider, use_effect, Scope};
+use dioxus_lazy::{factory, Direction, UseList};
 use dioxus_resize_observer::{use_resize, Rect};
 use dioxus_signals::{use_signal, Signal, Write};
 use dioxus_use_mounted::{use_mounted, UseMounted};
@@ -10,6 +11,8 @@ pub fn use_editor<'a, T>(
     cx: Scope<T>,
     language: Language,
     make_text: impl FnOnce() -> &'a str,
+    height: f64,
+    line_height: f64,
 ) -> UseEditor {
     let language_signal = use_context_provider(cx, || Signal::new(language));
     use_effect(cx, &language, |lang| {
@@ -26,6 +29,22 @@ pub fn use_editor<'a, T>(
     let container_ref = use_mounted(cx);
     let container_size = use_resize(cx, container_ref);
 
+    let list = UseList::builder()
+        .direction(Direction::Row)
+        .size(height)
+        .item_size(line_height)
+        .len(buffer().rope.len_lines())
+        .use_list(
+            cx,
+            factory::from_range_fn(move |range, is_rev| async move {
+                let mut lines = buffer().lines(&query(), range);
+                if is_rev {
+                    lines.reverse();
+                }
+                lines
+            }),
+        );
+
     UseEditor {
         buffer,
         cursor,
@@ -34,6 +53,9 @@ pub fn use_editor<'a, T>(
         container_ref,
         container_size,
         scroll,
+        list,
+        height,
+        line_height,
     }
 }
 
@@ -46,6 +68,9 @@ pub struct UseEditor {
     pub container_ref: UseMounted,
     pub container_size: Signal<Option<Rect>>,
     scroll: Signal<i32>,
+    pub list: UseList<Vec<Span>>,
+    pub height: f64,
+    pub line_height: f64,
 }
 
 impl UseEditor {

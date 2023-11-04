@@ -19,12 +19,9 @@ pub fn Editor(
     /// Font size of the editor text.
     #[props(default = 14.)]
     font_size: f64,
-
-    /// Font size of the editor text.
-    #[props(default = 24.)]
-    line_height: f64,
 ) -> Element {
-    to_owned![editor, font_size, line_height];
+    to_owned![editor, font_size];
+    let line_height = editor.line_height;
 
     let lines_ref: Signal<Option<Rc<MountedData>>> = use_signal(cx, || None);
 
@@ -34,7 +31,7 @@ pub fn Editor(
     });
 
     let layout_ref = layout();
-    let top_line = layout_ref.line(editor.scroll() as _).unwrap_or_default();
+    let top_line = editor.list.start();
     let point = editor.cursor();
     let cursor_point = point
         .row
@@ -57,10 +54,10 @@ pub fn Editor(
                 .floor() as usize
             + 1;
 
-        let values = editor
-            .buffer()
-            .lines(&editor.query.read(), top_line..top_line + bottom_line)
-            .into_iter()
+        let values_ref = editor.list.values.read();
+        let values = values_ref
+            .iter()
+            .cloned()
             .zip(layout_ref.lines().iter().cloned())
             .enumerate()
             .collect();
@@ -69,6 +66,7 @@ pub fn Editor(
 
     let mut line_numbers = Vec::new();
     let mut lines = Vec::new();
+
     let mut y = top_line as f64 * line_height;
     for (line_idx, (spans, line)) in line_values {
         let top = y;
@@ -112,13 +110,7 @@ pub fn Editor(
         Key::ArrowDown => editor.cursor_mut().row += 1,
         _ => {}
     };
-    let onscroll = move |_| {
-        if let Some(container) = &*editor.container_ref.signal.read() {
-            let elem: &web_sys::Element =
-                container.get_raw_element().unwrap().downcast_ref().unwrap();
-            editor.set_scroll(elem.scroll_top());
-        }
-    };
+    let onscroll = move |_| editor.list.scroll();
 
     render!(
         div {
@@ -126,7 +118,7 @@ pub fn Editor(
             display: "flex",
             flex_direction: "row",
             width: "800px",
-            height: "600px",
+            height: "{editor.height}px",
             margin: "50px auto",
             font: "{font_size}px monospace",
             line_height: "26px",
@@ -135,9 +127,9 @@ pub fn Editor(
             tabindex: 0,
             outline: "none",
             prevent_default: "onkeydown",
-            onmounted: move |event| editor.container_ref.onmounted(event),
+            onmounted: move |event| editor.list.mounted.onmounted(event),
             onclick: move |_| async move {
-                let mounted = editor.container_ref.signal.read().clone();
+                let mounted = editor.list.mounted.signal.read().clone();
                 if let Some(mounted) = mounted {
                     mounted.set_focus(true).await.unwrap();
                     editor.focus();

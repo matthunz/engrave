@@ -3,9 +3,13 @@ use engrave::{language, use_editor, Editor};
 use log::LevelFilter;
 
 fn app(cx: Scope) -> Element {
-    let editor = use_editor(cx, language::rust(), || {
-        include_str!("../src/editor/use_editor.rs")
-    });
+    let editor = use_editor(
+        cx,
+        language::rust(),
+        || include_str!("../src/editor/use_editor.rs"),
+        400.,
+        24.,
+    );
 
     render!(Editor { editor: editor })
 }

@@ -43,7 +43,7 @@ pub fn Editor(
     dioxus_signals::use_effect(cx, move || {
         let layout_ref = layout();
         let top_line = layout_ref.line(editor.scroll() as _).unwrap_or_default();
-        let bottom_line = top_line
+        let _bottom_line = top_line
             + (editor
                 .container_size
                 .read()

@@ -36,7 +36,7 @@ fn LineSpan(cx: Scope, span: Span) -> Element {
             "primitive_type" | "boolean_identifier" | "::" | "*" => "rgb(5, 80, 174)",
             "string_literal" | "integer_literal" => "rgb(7, 69, 124)",
             "{" | "}" => "#076678",
-            "(" | ")" | "|" | "=>" | "&" => "#faa356",
+            "(" | ")" | "=>" | "&" => "#faa356",
             ";" | "," | "<" | ">" | ":" => "#ccc",
             _ => "#000",
         },

@@ -3,7 +3,6 @@ use dioxus::prelude::{use_context_provider, use_effect, Scope};
 use dioxus_lazy::{factory, Direction, UseList};
 use dioxus_resize_observer::{use_resize, Rect};
 use dioxus_signals::{use_signal, Signal, Write};
-use dioxus_use_mounted::{use_mounted, UseMounted};
 use std::cell::Ref;
 use tree_sitter_c2rust::{Point, Query};
 
@@ -48,10 +47,6 @@ impl Builder {
         let cursor = use_signal(cx, || Point::new(0, 0));
         let is_focused = use_signal(cx, || false);
         let query = use_query(cx, language.highlight_query);
-        let scroll = use_signal(cx, || 0);
-
-        let container_ref = use_mounted(cx);
-        let container_size = use_resize(cx, container_ref);
 
         let list = UseList::builder()
             .direction(Direction::Row)
@@ -69,14 +64,14 @@ impl Builder {
                 }),
             );
 
+        let container_size = use_resize(cx, list.mounted);
+
         UseEditor {
             buffer,
             cursor,
             is_focused,
             query,
-            container_ref,
             container_size,
-            scroll,
             list,
             height: self.height,
             line_height: self.line_height,
@@ -90,9 +85,7 @@ pub struct UseEditor {
     cursor: Signal<Point>,
     is_focused: Signal<bool>,
     pub(crate) query: Signal<Query>,
-    pub container_ref: UseMounted,
     pub container_size: Signal<Option<Rect>>,
-    scroll: Signal<i32>,
     pub list: UseList<Vec<Span>>,
     pub height: f64,
     pub line_height: f64,
@@ -137,11 +130,7 @@ impl UseEditor {
     }
 
     pub fn scroll(&self) -> i32 {
-        *self.scroll.read()
-    }
-
-    pub fn set_scroll(&self, scroll: i32) {
-        self.scroll.set(scroll)
+        *self.list.scroll.read()
     }
 
     pub fn insert(&self, text: &str) {

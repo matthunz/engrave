@@ -16,7 +16,7 @@ pub fn use_buffer<'a, T>(
 }
 
 #[derive(Debug)]
-struct Item {
+pub struct Item {
     kind: String,
     range: Range,
 }
@@ -77,9 +77,7 @@ impl Buffer {
         mem::replace(&mut self.tree, tree)
     }
 
-    pub fn lines(&self, query: &Query, range: std::ops::Range<usize>) -> Vec<Vec<Span>> {
-        let highlights = self.highlights(query);
-
+    pub fn lines(&self, range: std::ops::Range<usize>, highlights: &[Item]) -> Vec<Vec<Span>> {
         self.rope
             .lines_at(range.start)
             .take(range.end - range.start)
@@ -91,7 +89,7 @@ impl Buffer {
                 let mut start = 0;
 
                 while let Some((col, _)) = iter.next() {
-                    for highlight in &highlights {
+                    for highlight in highlights {
                         let start_point = highlight.range.start_point;
                         let end_point = highlight.range.end_point;
 
@@ -131,7 +129,7 @@ impl Buffer {
             .collect()
     }
 
-    fn highlights(&self, query: &Query) -> Vec<Item> {
+    pub fn highlights(&self, query: &Query) -> Vec<Item> {
         let mut query_cursor = QueryCursor::new();
         let rope = &self.rope;
         let matches = query_cursor.matches(query, self.tree.root_node(), move |node: Node| {

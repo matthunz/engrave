@@ -83,15 +83,13 @@ pub fn Editor<'a>(
             false
         };
 
-        let line = render!(
-            Line {
-                key: "{line_idx}",
-                spans: spans,
-                top: top,
-                height: line.height,
-                is_selected: is_selected
-            }
-        );
+        let line = render!(Line {
+            key: "{line_idx}",
+            spans: spans,
+            top: top,
+            height: line.height,
+            is_selected: is_selected
+        });
         lines.push(line);
     }
 

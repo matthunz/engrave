@@ -4,21 +4,26 @@ use dioxus::prelude::*;
 #[component]
 pub fn Line(cx: Scope, spans: Vec<Span>, is_selected: bool, top: f64, height: f64) -> Element {
     let spans = spans.iter().enumerate().map(|(span_idx, span)| {
-        render!( LineSpan { key: "{span_idx}", span: span.clone() } )
+        render!(LineSpan {
+            key: "{span_idx}",
+            span: span.clone()
+        })
     });
 
-    render!(
-        div {
-            position: "absolute",
-            top: "{top}px",
-            width: "100%",
-            height: "{height}px",
-            white_space: "pre",
-            border: if *is_selected { "2px solid #c6cdd5" } else { "2px solid rgba(0, 0, 0, 0)" },
-            box_sizing: "border-box",
-            spans
-        }
-    )
+    render!(div {
+        position: "absolute",
+        top: "{top}px",
+        width: "100%",
+        height: "{height}px",
+        white_space: "pre",
+        border: if *is_selected {
+            "2px solid #c6cdd5"
+        } else {
+            "2px solid rgba(0, 0, 0, 0)"
+        },
+        box_sizing: "border-box",
+        spans
+    })
 }
 
 #[component]

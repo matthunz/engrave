@@ -48,6 +48,9 @@ impl Builder {
         let is_focused = use_signal(cx, || false);
         let query = use_query(cx, language.highlight_query);
 
+        let highlights = use_signal(cx, || buffer().highlights(&*query()));
+        dioxus_signals::use_effect(cx, move || highlights.set(buffer().highlights(&*query())));
+
         let list = UseList::builder()
             .direction(Direction::Row)
             .size(self.height)
@@ -56,7 +59,7 @@ impl Builder {
             .use_list(
                 cx,
                 factory::from_range_fn(move |range, is_rev| async move {
-                    let mut lines = buffer().lines(&query(), range);
+                    let mut lines = buffer().lines(range, &*highlights());
                     if is_rev {
                         lines.reverse();
                     }
@@ -82,7 +85,7 @@ impl Builder {
 #[derive(Clone, Copy, PartialEq)]
 pub struct UseEditor<'a> {
     pub buffer: Signal<Buffer>,
-   pub  cursor: Signal<Point>,
+    pub cursor: Signal<Point>,
     is_focused: Signal<bool>,
     pub(crate) query: Signal<Query>,
     pub container_size: Signal<Option<Rect>>,

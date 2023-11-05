@@ -69,24 +69,21 @@ pub fn Editor<'a>(
 
     let mut line_numbers = Vec::new();
     let mut lines = Vec::new();
-
     let mut y = top_line as f64 * line_height;
     for (line_idx, (spans, line)) in line_values {
         let top = y;
         y += line.height;
-
-        let line_number = render!(
-            div { position: "absolute", top: "{top}px", right: 0, color: "#888", line_height: "inherit",
-                "{line_idx + top_line + 1}"
-            }
-        );
-        line_numbers.push(line_number);
 
         let is_selected = if let Some(point) = cursor_point {
             editor.is_focused() && line_idx == point.row
         } else {
             false
         };
+
+        let line_number = render!(
+            div { position: "absolute", top: "{top}px", right: 0, color: if is_selected { "#000" } else { "#888" }, line_height: "inherit", "{line_idx + top_line + 1}" }
+        );
+        line_numbers.push(line_number);
 
         let line = render!(Line {
             key: "{line_idx}",
@@ -239,6 +236,7 @@ pub fn Editor<'a>(
                 position: "relative",
                 margin_left: "50px",
                 height: "{height}px",
+                cursor: "text",
                 onmounted: move |event| lines_ref.set(Some(event.data)),
                 onmousedown: move |event| async move {
                     is_mouse_down.set(true);

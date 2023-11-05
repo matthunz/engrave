@@ -80,18 +80,18 @@ impl Builder {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub struct UseEditor {
-    buffer: Signal<Buffer>,
-    cursor: Signal<Point>,
+pub struct UseEditor<'a> {
+    pub buffer: Signal<Buffer>,
+   pub  cursor: Signal<Point>,
     is_focused: Signal<bool>,
     pub(crate) query: Signal<Query>,
     pub container_size: Signal<Option<Rect>>,
-    pub list: UseList<Vec<Span>>,
+    pub list: &'a UseList<Vec<Span>>,
     pub height: f64,
     pub line_height: f64,
 }
 
-impl UseEditor {
+impl<'a> UseEditor<'a> {
     pub fn builder() -> Builder {
         Builder {
             font_size: 16.,
@@ -130,7 +130,7 @@ impl UseEditor {
     }
 
     pub fn scroll(&self) -> i32 {
-        *self.list.scroll.read()
+        *self.list.scroll_range.scroll.read()
     }
 
     pub fn insert(&self, text: &str) {
@@ -139,5 +139,7 @@ impl UseEditor {
             .write()
             .insert(cursor_ref.row, cursor_ref.column, text);
         cursor_ref.column += text.len();
+        cursor_ref.row += text.lines().count() - 1;
+        self.list.lazy.refresh();
     }
 }

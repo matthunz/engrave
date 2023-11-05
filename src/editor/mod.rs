@@ -12,26 +12,25 @@ pub use use_editor::{Builder, UseEditor};
 
 /// Text editor
 #[component]
-pub fn Editor(
-    cx: Scope,
-    editor: UseEditor,
+pub fn Editor<'a>(
+    cx: Scope<'a>,
+    editor: UseEditor<'a>,
 
     /// Font size of the editor text.
     #[props(default = 14.)]
     font_size: f64,
-) -> Element {
+) -> Element<'a> {
     to_owned![editor, font_size];
     let line_height = editor.line_height;
 
     let lines_ref: Signal<Option<Rc<MountedData>>> = use_signal(cx, || None);
 
     let layout = use_signal(cx, || Layout::new(font_size, line_height));
-    dioxus_signals::use_effect(cx, move || {
-        layout.write().measure(editor.buffer().rope.lines())
-    });
+    let buffer = editor.buffer;
+    dioxus_signals::use_effect(cx, move || layout.write().measure(buffer().rope.lines()));
 
     let layout_ref = layout();
-    let top_line = editor.list.start();
+    let top_line = editor.list.scroll_range.start();
     let point = editor.cursor();
     let cursor_point = point
         .row
@@ -40,13 +39,14 @@ pub fn Editor(
     let cursor_pos = cursor_point.map(|_| layout_ref.pos(point).unwrap_or_default());
 
     let line_values = use_signal(cx, Vec::new);
+    let container_size = editor.container_size;
+    let scroll = editor.list.scroll_range.scroll;
+    let values = editor.list.lazy.values;
     dioxus_signals::use_effect(cx, move || {
         let layout_ref = layout();
-        let top_line = layout_ref.line(editor.scroll() as _).unwrap_or_default();
+        let top_line = layout_ref.line(*scroll() as _).unwrap_or_default();
         let _bottom_line = top_line
-            + (editor
-                .container_size
-                .read()
+            + (container_size()
                 .as_ref()
                 .map(|rect| rect.height())
                 .unwrap_or_default()
@@ -54,7 +54,7 @@ pub fn Editor(
                 .floor() as usize
             + 1;
 
-        let values_ref = editor.list.values.read();
+        let values_ref = values();
         let values = values_ref
             .iter()
             .cloned()
@@ -83,26 +83,22 @@ pub fn Editor(
             false
         };
 
-        let line = render!(Line {
-            key: "{line_idx}",
-            spans: spans,
-            top: top,
-            height: line.height,
-            is_selected: is_selected
-        });
+        let line = render!(
+            Line {
+                key: "{line_idx}",
+                spans: spans,
+                top: top,
+                height: line.height,
+                is_selected: is_selected
+            }
+        );
         lines.push(line);
     }
 
     let height = editor.buffer().rope.len_lines() as f64 * line_height;
     let onkeydown = move |event: KeyboardEvent| match event.key() {
         Key::Character(text) => editor.insert(&text),
-        Key::Enter => {
-            let mut cursor_ref = editor.cursor_mut();
-            editor
-                .buffer_mut()
-                .insert(cursor_ref.row, cursor_ref.column, "\n");
-            cursor_ref.row += 1;
-        }
+        Key::Enter => editor.insert("\n"),
         Key::ArrowUp => {
             let mut cursor_ref = editor.cursor_mut();
             cursor_ref.row = cursor_ref.row.saturating_sub(1);
@@ -112,6 +108,8 @@ pub fn Editor(
     };
     let onscroll = move |_| editor.list.scroll();
 
+    let mounted = editor.list.mounted;
+    let cursor = editor.cursor;
     render!(
         div {
             position: "relative",
@@ -128,11 +126,13 @@ pub fn Editor(
             outline: "none",
             prevent_default: "onkeydown",
             onmounted: move |event| editor.list.mounted.onmounted(event),
-            onclick: move |_| async move {
-                let mounted = editor.list.mounted.signal.read().clone();
-                if let Some(mounted) = mounted {
-                    mounted.set_focus(true).await.unwrap();
-                    editor.focus();
+            onclick: move |_| {
+                editor.focus();
+                async move {
+                    let mounted = mounted.signal.read().clone();
+                    if let Some(mounted) = mounted {
+                        mounted.set_focus(true).await.unwrap();
+                    }
                 }
             },
             onfocusin: move |_| editor.focus(),
@@ -157,7 +157,7 @@ pub fn Editor(
                             )
                     {
                         let col = col_cell.unwrap_or_default();
-                        *editor.cursor_mut() = Point::new(line, col);
+                        *cursor.write() = Point::new(line, col);
                     }
                 },
                 if let Some(cursor_pos) = cursor_pos {

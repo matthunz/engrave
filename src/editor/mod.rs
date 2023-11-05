@@ -38,6 +38,9 @@ pub fn Editor<'a>(
         .map(|row| Point::new(row, point.column));
     let cursor_pos = cursor_point.map(|_| layout_ref.pos(point).unwrap_or_default());
 
+    let anchor: Signal<Option<Point>> = use_signal(cx, || None);
+    let is_mouse_down = use_signal(cx, || false);
+
     let line_values = use_signal(cx, Vec::new);
     let container_size = editor.container_size;
     let scroll = editor.list.scroll_range.scroll;
@@ -106,8 +109,79 @@ pub fn Editor<'a>(
     };
     let onscroll = move |_| editor.list.scroll();
 
+    let onmousemove = move |event: MouseEvent| async move {
+        if *is_mouse_down() {
+            let mut anchor_ref = anchor.write();
+            if let Some(_point) = &mut *anchor_ref {
+                let lines_elem = lines_ref.unwrap();
+                let bounds = lines_elem.get_client_rect().await.unwrap();
+                if let Some((line, col_cell)) = layout().target(
+                    event.client_coordinates().x - bounds.origin.x,
+                    event.client_coordinates().y - bounds.origin.y,
+                ) {
+                    let col = col_cell.unwrap_or_default();
+                    *anchor_ref = Some(Point::new(line, col));
+                }
+            }
+        }
+    };
+
+    let selection = &anchor().and_then(|anchor| {
+        if let Some(_anchor_pos) = layout().pos(anchor) {
+            if let Some(_cursor_pos) = cursor_pos {
+                let cursor = cursor_point.unwrap();
+
+                let start_line = anchor.row.min(cursor.row);
+                let end_line = anchor.row.max(cursor.row);
+
+                let start_col = anchor.column.min(cursor.column);
+                let end_col = anchor.column.max(cursor.column);
+
+                let top = start_line.saturating_sub(editor.list.scroll_range.start()) as f64
+                    * line_height;
+
+                let lines = (0..end_line - start_line).map(|idx| {
+                    let line_top = top + idx as f64 * line_height;
+                    render!(div {
+                        position: "absolute",
+                        top: "{line_top}px",
+                        left: 0,
+                        width: "100%",
+                        height: "{line_height}px",
+                        background: "rgb(181, 215, 251)"
+                    })
+                });
+
+                let start_pos = layout_ref
+                    .pos(Point::new(end_line, start_col))
+                    .unwrap_or_default();
+                let end_pos = layout_ref
+                    .pos(Point::new(end_line, end_col))
+                    .unwrap_or_default();
+                let width = end_pos[0] - start_pos[0];
+
+                render! {
+                    lines,
+                    div {
+                        position: "absolute",
+                        top: "{top + ((end_line - start_line) as f64 * line_height)}px",
+                        left: "{start_pos[0]}px",
+                        width: "{width}px",
+                        height: "{line_height}px",
+                        background: "rgb(181, 215, 251)"
+                    }
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    });
+
     let mounted = editor.list.mounted;
     let cursor = editor.cursor;
+
     render!(
         div {
             position: "relative",
@@ -122,6 +196,8 @@ pub fn Editor<'a>(
             overflow: "auto",
             tabindex: 0,
             outline: "none",
+            user_select: "none",
+            webkit_user_select: "none",
             prevent_default: "onkeydown",
             onmounted: move |event| editor.list.mounted.onmounted(event),
             onclick: move |_| {
@@ -137,6 +213,18 @@ pub fn Editor<'a>(
             onfocusout: move |_| editor.blur(),
             onkeydown: onkeydown,
             onscroll: onscroll,
+            onmousemove: onmousemove,
+            onmouseup: move |_| {
+                is_mouse_down.set(false);
+                if let Some(cursor_point) = cursor_point {
+                    let mut anchor_ref = anchor.write();
+                    if let Some(anchor_point) = &*anchor_ref {
+                        if cursor_point == *anchor_point {
+                            *anchor_ref = None;
+                        }
+                    }
+                }
+            },
             div { position: "relative", width: "50px", line_numbers.into_iter() }
             div {
                 flex: 1,
@@ -145,6 +233,7 @@ pub fn Editor<'a>(
                 height: "{height}px",
                 onmounted: move |event| lines_ref.set(Some(event.data)),
                 onmousedown: move |event| async move {
+                    is_mouse_down.set(true);
                     let lines_elem = lines_ref.unwrap();
                     let bounds = lines_elem.get_client_rect().await.unwrap();
                     if let Some((line, col_cell))
@@ -156,6 +245,7 @@ pub fn Editor<'a>(
                     {
                         let col = col_cell.unwrap_or_default();
                         *cursor.write() = Point::new(line, col);
+                        anchor.set(Some(Point::new(line, col)));
                     }
                 },
                 if let Some(cursor_pos) = cursor_pos {
@@ -170,7 +260,7 @@ pub fn Editor<'a>(
                         display: if editor.is_focused() { "block" } else { "none" }
                     })
                 }
-
+                selection,
                 lines.into_iter()
             }
         }

@@ -1,5 +1,5 @@
 use crate::{language, use_buffer, use_query, Buffer, Language, Span};
-use dioxus::prelude::{use_context_provider, use_effect, Scope};
+use dioxus::prelude::{to_owned, use_context_provider, use_effect, Scope};
 use dioxus_lazy::{factory, Direction, UseList};
 use dioxus_resize_observer::{use_resize, Rect};
 use dioxus_signals::{use_signal, Signal, Write};
@@ -35,7 +35,11 @@ impl Builder {
         self
     }
 
-    pub fn use_editor<'a, T>(self, cx: Scope<T>, make_text: impl FnOnce() -> &'a str) -> UseEditor {
+    pub fn use_editor<'a, 's, T>(
+        self,
+        cx: Scope<'a, T>,
+        make_text: impl FnOnce() -> &'s str,
+    ) -> &'a UseEditor {
         let language = self.language;
         let language_signal = use_context_provider(cx, || Signal::new(language));
         use_effect(cx, &language, |lang| {
@@ -66,10 +70,11 @@ impl Builder {
                     lines
                 }),
             );
+        to_owned![list];
 
         let container_size = use_resize(cx, list.mounted);
 
-        UseEditor {
+        cx.bump().alloc(UseEditor {
             buffer,
             cursor,
             is_focused,
@@ -78,23 +83,23 @@ impl Builder {
             list,
             height: self.height,
             line_height: self.line_height,
-        }
+        })
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
-pub struct UseEditor<'a> {
+#[derive(Clone, PartialEq)]
+pub struct UseEditor {
     pub buffer: Signal<Buffer>,
     pub cursor: Signal<Point>,
     is_focused: Signal<bool>,
     pub(crate) query: Signal<Query>,
     pub container_size: Signal<Option<Rect>>,
-    pub list: &'a UseList<Vec<Span>>,
+    pub list: UseList<Vec<Span>>,
     pub height: f64,
     pub line_height: f64,
 }
 
-impl<'a> UseEditor<'a> {
+impl UseEditor {
     pub fn builder() -> Builder {
         Builder {
             font_size: 16.,

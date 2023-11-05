@@ -14,7 +14,7 @@ pub use use_editor::{Builder, UseEditor};
 #[component]
 pub fn Editor<'a>(
     cx: Scope<'a>,
-    editor: UseEditor<'a>,
+    editor: &'a UseEditor,
 
     /// Font size of the editor text.
     #[props(default = 14.)]

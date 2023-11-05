@@ -1,10 +1,10 @@
 use crate::Span;
 use dioxus::prelude::Scope;
 use dioxus_signals::{use_signal, Signal};
-use ropey::Rope;
+use ropey::{Rope, RopeSlice};
 use std::mem;
 use tree_sitter_c2rust::{
-    InputEdit, Language, Node, Parser, Point, Query, QueryCursor, Range, Tree,
+    InputEdit, Language, Node, Parser, Point, Query, QueryCursor, Range, TextProvider, Tree,
 };
 
 pub fn use_buffer<'a, T>(
@@ -67,8 +67,8 @@ impl Buffer {
             .parse_with(
                 &mut |idx, _| {
                     self.rope
-                        .get_chunks_at_byte(idx)
-                        .and_then(|mut chunk| chunk.0.next())
+                        .get_chunk_at_byte(idx)
+                        .map(|(chunk, _, _, _)| chunk)
                         .unwrap_or_default()
                 },
                 None, // Some(&self.tree),
@@ -132,12 +132,13 @@ impl Buffer {
     pub fn highlights(&self, query: &Query) -> Vec<Item> {
         let mut query_cursor = QueryCursor::new();
         let rope = &self.rope;
-        let matches = query_cursor.matches(query, self.tree.root_node(), move |node: Node| {
-            rope.get_byte_slice(node.start_byte()..node.end_byte())
-                .map(|slice| slice.chunks().map(move |chunk| chunk.as_bytes()))
-                .into_iter()
-                .flatten()
-        });
+        let matches = query_cursor.matches(
+            query,
+            self.tree.root_node(),
+            RopeProvider {
+                slice: rope.slice(..),
+            },
+        );
         matches
             .flat_map(|mat| {
                 mat.captures.iter().map(|capture| {
@@ -147,5 +148,32 @@ impl Buffer {
                 })
             })
             .collect()
+    }
+}
+
+pub struct Iter<'a> {
+    chunks: ropey::iter::Chunks<'a>,
+}
+
+impl<'a> Iterator for Iter<'a> {
+    type Item = &'a [u8];
+    fn next(&mut self) -> Option<Self::Item> {
+        self.chunks.next().map(str::as_bytes)
+    }
+}
+
+pub struct RopeProvider<'a> {
+    slice: RopeSlice<'a>,
+}
+
+impl<'a> TextProvider<'a> for RopeProvider<'a> {
+    type I = Iter<'a>;
+
+    fn text(&mut self, node: Node) -> Self::I {
+        let len = self.slice.len_bytes();
+        let start = node.end_byte().min(len);
+        let end = node.end_byte().min(len);
+        let chunks = self.slice.byte_slice(start..end).chunks();
+        Iter { chunks }
     }
 }

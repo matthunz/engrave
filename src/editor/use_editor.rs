@@ -52,8 +52,8 @@ impl Builder {
         let is_focused = use_signal(cx, || false);
         let query = use_query(cx, language.highlight_query);
 
-        let highlights = use_signal(cx, || buffer().highlights(&*query()));
-        dioxus_signals::use_effect(cx, move || highlights.set(buffer().highlights(&*query())));
+        let highlights = use_signal(cx, || buffer().highlights(&query()));
+        dioxus_signals::use_effect(cx, move || highlights.set(buffer().highlights(&query())));
 
         let list = UseList::builder()
             .direction(Direction::Row)
@@ -63,7 +63,7 @@ impl Builder {
             .use_list(
                 cx,
                 factory::from_range_fn(move |range, is_rev| async move {
-                    let mut lines = buffer().lines(range, &*highlights());
+                    let mut lines = buffer().lines(range, &highlights());
                     if is_rev {
                         lines.reverse();
                     }

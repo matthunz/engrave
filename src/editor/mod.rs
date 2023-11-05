@@ -76,7 +76,9 @@ pub fn Editor<'a>(
         y += line.height;
 
         let line_number = render!(
-            div { position: "absolute", top: "{top}px", right: 0, line_height: "inherit", "{line_idx + top_line + 1}" }
+            div { position: "absolute", top: "{top}px", right: 0, color: "#888", line_height: "inherit",
+                "{line_idx + top_line + 1}"
+            }
         );
         line_numbers.push(line_number);
 

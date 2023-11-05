@@ -31,7 +31,7 @@ fn LineSpan(cx: Scope, span: Span) -> Element {
     let color = match span.kind {
         Some(ref s) => match &**s {
             "fn" | "struct" | "pub" | "use" | "let" | "match" | "async" | "unsafe" | "move"
-            | "|" | "impl" => "rgb(207, 34, 46)",
+            | "|" | "impl" | "mutable_specifier" => "rgb(207, 34, 46)",
             "attribute_item" | "identifier" | "type_identifier" | "!" | "'" => "rgb(96, 59, 179)",
             "primitive_type" | "boolean_identifier" | "::" | "*" => "rgb(5, 80, 174)",
             "string_literal" | "integer_literal" => "rgb(7, 69, 124)",

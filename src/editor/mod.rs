@@ -129,8 +129,8 @@ pub fn Editor<'a>(
     };
 
     let selection = &anchor().and_then(|anchor| {
-        if let Some(_anchor_pos) = layout().pos(anchor) {
-            if let Some(_cursor_pos) = cursor_pos {
+        if let Some(anchor_pos) = layout().pos(anchor) {
+            if let Some(cursor_pos) = cursor_pos {
                 let cursor = cursor_point.unwrap();
 
                 let start_line = anchor.row.min(cursor.row);
@@ -155,19 +155,25 @@ pub fn Editor<'a>(
                 });
 
                 let start_pos = layout_ref
-                    .pos(Point::new(end_line, start_col))
+                    .pos(Point::new(anchor.row, start_col))
                     .unwrap_or_default();
                 let end_pos = layout_ref
-                    .pos(Point::new(end_line, end_col))
+                    .pos(Point::new(anchor.row, end_col))
                     .unwrap_or_default();
-                let width = end_pos[0] - start_pos[0];
+
+                let left = if start_line == end_line {
+                    start_pos[0]
+                } else {
+                    0.
+                };
+                let width = end_pos[0] - left;
 
                 render! {
                     lines,
                     div {
                         position: "absolute",
-                        top: "{top + ((end_line - start_line) as f64 * line_height)}px",
-                        left: "{start_pos[0]}px",
+                        top: "{anchor_pos[1]}px",
+                        left: "{left}px",
                         width: "{width}px",
                         height: "{line_height}px",
                         background: "rgb(181, 215, 251)"

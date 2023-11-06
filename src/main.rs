@@ -23,7 +23,7 @@ pub fn EditorPreview<'a>(
         .font_size(font_size.0)
         .line_height(line_height.0)
         .height(height.0)
-        .use_editor(cx, || include_str!("../example.rs"));
+        .use_editor(cx, || include_str!("../examples/editor.rs"));
 
     render!(Editor { editor: editor })
 }

@@ -5,6 +5,13 @@ authors = ["Matt Hunzinger <matthunz2@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
+[features]
+lookbook = ["dep:lookbook"]
+
+[[bin]]
+name = "engrave"
+required-features = ["lookbook"]
+
 [dependencies]
 dioxus = { git = "https://github.com/dioxuslabs/dioxus" }
 dioxus-web = { git = "https://github.com/dioxuslabs/dioxus" }
@@ -22,3 +29,4 @@ wasm-bindgen = "0.2.87"
 web-sys = { version = "0.3.56", features = ["CanvasRenderingContext2d", "HtmlCanvasElement", "HtmlElement", "TextMetrics"] }
 js-sys = "0.3.65"
 dioxus-lazy = { git = "https://github.com/matthunz/dioxus-lazy", version = "0.1.0" }
+lookbook = { git = "https://github.com/matthunz/lookbook", optional = true }

@@ -2,7 +2,10 @@ use crate::{
     language, use_buffer, use_highlights, use_query_signal, Buffer, Language, Range, Span,
 };
 use dioxus::prelude::{to_owned, use_context_provider, use_effect, Scope};
-use dioxus_lazy::{factory, Direction, UseList};
+use dioxus_lazy::{
+    lazy::{self, Values},
+    Direction, UseLazyAsync, UseList,
+};
 use dioxus_resize_observer::{use_resize, Rect};
 use dioxus_signals::{use_signal, Signal, Write};
 use std::cell::Ref;
@@ -64,7 +67,7 @@ impl Builder {
             .len(buffer().rope.len_lines())
             .use_list(
                 cx,
-                factory::from_range_fn(move |range, is_rev| async move {
+                lazy::from_async_range_fn(move |range, is_rev| async move {
                     let mut lines = buffer().lines(range, &highlights());
                     if is_rev {
                         lines.reverse();
@@ -95,7 +98,7 @@ pub struct UseEditor {
     is_focused: Signal<bool>,
     pub(crate) query: Signal<Query>,
     pub container_size: Signal<Option<Rect>>,
-    pub list: UseList<Vec<Span>>,
+    pub list: UseList<UseLazyAsync<Vec<Span>>>,
     pub selections: Signal<Vec<Range>>,
     pub height: f64,
     pub line_height: f64,

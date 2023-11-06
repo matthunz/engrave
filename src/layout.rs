@@ -121,7 +121,7 @@ impl Layout {
                     }
                 }
 
-                return Some((line_idx, None));
+                return Some((line_idx, Some(line.chars.len() - 1)));
             }
         }
         None

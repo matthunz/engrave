@@ -69,14 +69,16 @@ pub fn Editor(
         let top = y;
         y += line.height;
 
+        let n = line_idx + top_line;
+
         let is_selected = if let Some(selection) = editor.selections.read().first() {
-            editor.is_focused() && line_idx == selection.start.row
+            editor.is_focused() && n == selection.start.row
         } else {
             false
         };
 
         let line_number = render!(
-            div { position: "absolute", top: "{top}px", right: 0, color: if is_selected { "#000" } else { "#888" }, line_height: "inherit", "{line_idx + top_line + 1}" }
+            div { position: "absolute", top: "{top}px", right: 0, color: if is_selected { "#000" } else { "#888" }, line_height: "inherit", "{n + 1}" }
         );
         line_numbers.push(line_number);
 

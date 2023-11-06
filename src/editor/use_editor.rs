@@ -1,4 +1,4 @@
-use crate::{language, use_buffer, use_highlights, Buffer, Language, Range, Span};
+use crate::{language, use_buffer, use_highlights, Buffer, Highlight, Language, Range, Span};
 use dioxus::prelude::{use_context_provider, Scope};
 use dioxus_lazy::{
     lazy::{self, Values},
@@ -69,10 +69,10 @@ impl Builder {
         UseEditor {
             buffer,
             is_focused,
-
             container_size,
             list,
             selections,
+            highlights,
             height: self.height,
             line_height: self.line_height,
         }
@@ -86,6 +86,7 @@ pub struct UseEditor {
     pub container_size: Signal<Option<Rect>>,
     pub list: UseList<UseLazyAsync<Vec<Span>>>,
     pub selections: Signal<Vec<Range>>,
+    pub highlights: Signal<Vec<Highlight>>,
     pub height: f64,
     pub line_height: f64,
 }

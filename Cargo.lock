@@ -382,7 +382,7 @@ dependencies = [
 [[package]]
 name = "dioxus-lazy"
 version = "0.1.0"
-source = "git+https://github.com/matthunz/dioxus-lazy#bf7bc931de2baddfe0cd0bfb03b6965c2ba40a09"
+source = "git+https://github.com/matthunz/dioxus-lazy#9b0d5dd0f6e99e1f751e66869226b5a096b4ad5c"
 dependencies = [
  "console_error_panic_hook",
  "dioxus",

@@ -1,7 +1,5 @@
-use crate::{
-    language, use_buffer, use_highlights, use_query_signal, Buffer, Language, Range, Span,
-};
-use dioxus::prelude::{to_owned, use_context_provider, use_effect, Scope};
+use crate::{language, use_buffer, use_highlights, Buffer, Language, Range, Span};
+use dioxus::prelude::{use_context_provider, Scope};
 use dioxus_lazy::{
     lazy::{self, Values},
     Direction, UseLazyAsync, UseList,
@@ -9,7 +7,6 @@ use dioxus_lazy::{
 use dioxus_resize_observer::{use_resize, Rect};
 use dioxus_signals::{use_signal, Signal, Write};
 use std::cell::Ref;
-use tree_sitter_c2rust::Query;
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct Builder {
@@ -44,22 +41,14 @@ impl Builder {
         self,
         cx: Scope<'a, T>,
         make_text: impl FnOnce() -> &'s str,
-    ) -> &'a UseEditor {
+    ) -> UseEditor {
         let language = self.language;
-        let language_signal = use_context_provider(cx, || Signal::new(language));
-        use_effect(cx, &language, |lang| {
-            language_signal.set(lang);
-            async {}
-        });
+        use_context_provider(cx, || Signal::new(language));
 
         let buffer = use_buffer(cx, language.tree_sitter, make_text);
         let is_focused = use_signal(cx, || false);
-        let query = use_query_signal(cx, language.highlight_query);
-
         let selections = use_signal(cx, || Vec::new());
-
         let highlights = use_highlights(cx, buffer);
-
         let list = UseList::builder()
             .direction(Direction::Row)
             .size(self.height)
@@ -75,28 +64,25 @@ impl Builder {
                     lines
                 }),
             );
-        to_owned![list];
-
         let container_size = use_resize(cx, list.mounted);
 
-        cx.bump().alloc(UseEditor {
+        UseEditor {
             buffer,
             is_focused,
-            query,
+
             container_size,
             list,
             selections,
             height: self.height,
             line_height: self.line_height,
-        })
+        }
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct UseEditor {
     pub buffer: Signal<Buffer>,
     is_focused: Signal<bool>,
-    pub(crate) query: Signal<Query>,
     pub container_size: Signal<Option<Rect>>,
     pub list: UseList<UseLazyAsync<Vec<Span>>>,
     pub selections: Signal<Vec<Range>>,

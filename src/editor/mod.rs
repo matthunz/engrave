@@ -14,14 +14,14 @@ pub use use_editor::{Builder, UseEditor};
 
 /// Text editor
 #[component]
-pub fn Editor<'a>(
-    cx: Scope<'a>,
-    editor: &'a UseEditor,
+pub fn Editor(
+    cx: Scope,
+    editor: UseEditor,
 
     /// Font size of the editor text.
     #[props(default = 14.)]
     font_size: f64,
-) -> Element<'a> {
+) -> Element {
     to_owned![editor, font_size];
     let line_height = editor.line_height;
 
@@ -120,6 +120,7 @@ pub fn Editor<'a>(
     let editor_ref = editor.selections.read();
     let cursors = editor_ref.iter().map(|selection| {
         let [x, y] = layout_ref.pos(selection.start).unwrap_or_default();
+
         render!(Cursor {
             x: x,
             y: y,

@@ -1,0 +1,9 @@
+[build]
+  base = "."
+  publish = "dist/"
+  command = "rustup default nightly && rustup target add wasm32-unknown-unknown && cargo install dioxus-cli && dx build --release --features lookbook"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -14,3 +14,17 @@ pub use span::Span;
 
 mod use_query;
 pub use use_query::use_query;
+
+pub use tree_sitter_c2rust::Point;
+
+#[derive(Clone, Copy, Default)]
+pub struct Range {
+    pub start: Point,
+    pub end: Point,
+}
+
+impl Range {
+    pub fn new(start: Point, end: Point) -> Self {
+        Self { start, end }
+    }
+}

@@ -1,8 +1,10 @@
-use crate::layout::Layout;
+use crate::{editor::cursor::Cursor, layout::Layout, Range};
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
 use dioxus_signals::{use_signal, Signal};
 use std::rc::Rc;
 use tree_sitter_c2rust::Point;
+
+mod cursor;
 
 mod line;
 use line::Line;
@@ -31,14 +33,7 @@ pub fn Editor<'a>(
 
     let layout_ref = layout();
     let top_line = editor.list.scroll_range.start();
-    let point = editor.cursor();
-    let cursor_point = point
-        .row
-        .checked_sub(top_line)
-        .map(|row| Point::new(row, point.column));
-    let cursor_pos = cursor_point.map(|_| layout_ref.pos(point).unwrap_or_default());
 
-    let anchor: Signal<Option<Point>> = use_signal(cx, || None);
     let is_mouse_down = use_signal(cx, || false);
 
     let line_values = use_signal(cx, Vec::new);
@@ -74,8 +69,8 @@ pub fn Editor<'a>(
         let top = y;
         y += line.height;
 
-        let is_selected = if let Some(point) = cursor_point {
-            editor.is_focused() && line_idx == point.row
+        let is_selected = if let Some(selection) = editor.selections.read().first() {
+            editor.is_focused() && line_idx == selection.start.row
         } else {
             false
         };
@@ -99,19 +94,15 @@ pub fn Editor<'a>(
     let onkeydown = move |event: KeyboardEvent| match event.key() {
         Key::Character(text) => editor.insert(&text),
         Key::Enter => editor.insert("\n"),
-        Key::ArrowUp => {
-            let mut cursor_ref = editor.cursor_mut();
-            cursor_ref.row = cursor_ref.row.saturating_sub(1);
-        }
-        Key::ArrowDown => editor.cursor_mut().row += 1,
+
         _ => {}
     };
     let onscroll = move |_| editor.list.scroll();
 
+    let editor_clone = editor.clone();
     let onmousemove = move |event: MouseEvent| async move {
         if *is_mouse_down() {
-            let mut anchor_ref = anchor.write();
-            if let Some(_point) = &mut *anchor_ref {
+            if let Some(selection) = editor_clone.selections.write().last_mut() {
                 let lines_elem = lines_ref.unwrap();
                 let bounds = lines_elem.get_client_rect().await.unwrap();
                 if let Some((line, col_cell)) = layout().target(
@@ -119,74 +110,24 @@ pub fn Editor<'a>(
                     event.client_coordinates().y - bounds.origin.y,
                 ) {
                     let col = col_cell.unwrap_or_default();
-                    *anchor_ref = Some(Point::new(line, col));
+                    selection.end = Point::new(line, col);
                 }
             }
         }
     };
 
-    let selection = &anchor().and_then(|anchor| {
-        if let Some(anchor_pos) = layout().pos(anchor) {
-            if let Some(cursor_pos) = cursor_pos {
-                let cursor = cursor_point.unwrap();
-
-                let start_line = anchor.row.min(cursor.row);
-                let end_line = anchor.row.max(cursor.row);
-
-                let start_col = anchor.column.min(cursor.column);
-                let end_col = anchor.column.max(cursor.column);
-
-                let top = start_line.saturating_sub(editor.list.scroll_range.start()) as f64
-                    * line_height;
-
-                let lines = (0..end_line - start_line).map(|idx| {
-                    let line_top = top + idx as f64 * line_height;
-                    render!(div {
-                        position: "absolute",
-                        top: "{line_top}px",
-                        left: 0,
-                        width: "100%",
-                        height: "{line_height}px",
-                        background: "rgb(181, 215, 251)"
-                    })
-                });
-
-                let start_pos = layout_ref
-                    .pos(Point::new(anchor.row, start_col))
-                    .unwrap_or_default();
-                let end_pos = layout_ref
-                    .pos(Point::new(anchor.row, end_col))
-                    .unwrap_or_default();
-
-                let left = if start_line == end_line {
-                    start_pos[0]
-                } else {
-                    0.
-                };
-                let width = end_pos[0] - left;
-
-                render! {
-                    lines,
-                    div {
-                        position: "absolute",
-                        top: "{anchor_pos[1]}px",
-                        left: "{left}px",
-                        width: "{width}px",
-                        height: "{line_height}px",
-                        background: "rgb(181, 215, 251)"
-                    }
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        }
+    let mounted = editor.list.mounted;
+    let editor_ref = editor.selections.read();
+    let cursors = editor_ref.iter().map(|selection| {
+        let [x, y] = layout_ref.pos(selection.start).unwrap_or_default();
+        render!(Cursor {
+            x: x,
+            y: y,
+            is_active: editor.is_focused()
+        })
     });
 
-    let mounted = editor.list.mounted;
-    let cursor = editor.cursor;
-
+    let editor_clone = editor.clone();
     render!(
         div {
             position: "relative",
@@ -219,17 +160,7 @@ pub fn Editor<'a>(
             onkeydown: onkeydown,
             onscroll: onscroll,
             onmousemove: onmousemove,
-            onmouseup: move |_| {
-                is_mouse_down.set(false);
-                if let Some(cursor_point) = cursor_point {
-                    let mut anchor_ref = anchor.write();
-                    if let Some(anchor_point) = &*anchor_ref {
-                        if cursor_point == *anchor_point {
-                            *anchor_ref = None;
-                        }
-                    }
-                }
-            },
+            onmouseup: move |_| is_mouse_down.set(false),
             div { position: "relative", width: "50px", line_numbers.into_iter() }
             div {
                 flex: 1,
@@ -250,23 +181,12 @@ pub fn Editor<'a>(
                             )
                     {
                         let col = col_cell.unwrap_or_default();
-                        *cursor.write() = Point::new(line, col);
-                        anchor.set(Some(Point::new(line, col)));
+                        let mut selections = editor_clone.selections.write();
+                        selections.clear();
+                        selections.push(Range::new(Point::new(line, col), Point::new(line, col)));
                     }
                 },
-                if let Some(cursor_pos) = cursor_pos {
-                    render!(div {
-                        position: "absolute",
-                        top: "{cursor_pos[1]}px",
-                        left: "{cursor_pos[0]}px",
-                        width: "3px",
-                        height: "24px",
-                        class: "cursor",
-                        z_index: 9,
-                        display: if editor.is_focused() { "block" } else { "none" }
-                    })
-                }
-                selection,
+                cursors,
                 lines.into_iter()
             }
         }

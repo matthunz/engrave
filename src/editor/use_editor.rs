@@ -1,4 +1,4 @@
-use crate::{language, use_buffer, use_query, Buffer, Language, Span};
+use crate::{language, use_buffer, use_query, Buffer, Language, Range, Span};
 use dioxus::prelude::{to_owned, use_context_provider, use_effect, Scope};
 use dioxus_lazy::{factory, Direction, UseList};
 use dioxus_resize_observer::{use_resize, Rect};
@@ -48,9 +48,10 @@ impl Builder {
         });
 
         let buffer = use_buffer(cx, language.tree_sitter, make_text);
-        let cursor = use_signal(cx, || Point::new(0, 0));
         let is_focused = use_signal(cx, || false);
         let query = use_query(cx, language.highlight_query);
+
+        let selections = use_signal(cx, || Vec::new());
 
         let highlights = use_signal(cx, || buffer().highlights(&query()));
         dioxus_signals::use_effect(cx, move || highlights.set(buffer().highlights(&query())));
@@ -76,11 +77,11 @@ impl Builder {
 
         cx.bump().alloc(UseEditor {
             buffer,
-            cursor,
             is_focused,
             query,
             container_size,
             list,
+            selections,
             height: self.height,
             line_height: self.line_height,
         })
@@ -90,11 +91,11 @@ impl Builder {
 #[derive(Clone, PartialEq)]
 pub struct UseEditor {
     pub buffer: Signal<Buffer>,
-    pub cursor: Signal<Point>,
     is_focused: Signal<bool>,
     pub(crate) query: Signal<Query>,
     pub container_size: Signal<Option<Rect>>,
     pub list: UseList<Vec<Span>>,
+    pub selections: Signal<Vec<Range>>,
     pub height: f64,
     pub line_height: f64,
 }
@@ -117,14 +118,6 @@ impl UseEditor {
         self.buffer.write()
     }
 
-    pub fn cursor(&self) -> Point {
-        *self.cursor.read()
-    }
-
-    pub fn cursor_mut(&self) -> Write<Point> {
-        self.cursor.write()
-    }
-
     pub fn is_focused(&self) -> bool {
         *self.is_focused.read()
     }
@@ -142,7 +135,7 @@ impl UseEditor {
     }
 
     pub fn insert(&self, text: &str) {
-        let mut cursor_ref = self.cursor.write();
+        let mut cursor_ref = &mut self.selections.write()[0].start;
         self.buffer
             .write()
             .insert(cursor_ref.row, cursor_ref.column, text);

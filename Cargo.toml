@@ -30,3 +30,12 @@ web-sys = { version = "0.3.56", features = ["CanvasRenderingContext2d", "HtmlCan
 js-sys = "0.3.65"
 dioxus-lazy = { git = "https://github.com/matthunz/dioxus-lazy", version = "0.1.0" }
 lookbook = { git = "https://github.com/matthunz/lookbook", optional = true }
+
+[profile.release]
+opt-level = "z"
+debug = false
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+incremental = false

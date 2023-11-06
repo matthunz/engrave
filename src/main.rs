@@ -4,6 +4,7 @@ use lookbook::{preview, Json, LookBook};
 
 /// To-Do Task.
 #[preview]
+#[allow(non_snake_case)]
 pub fn EditorPreview<'a>(
     cx: Scope<'a>,
 

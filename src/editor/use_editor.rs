@@ -1,5 +1,5 @@
 use crate::{
-    buffer::use_highlights, language, use_buffer, use_query_signal, Buffer, Language, Range, Span,
+    language, use_buffer, use_highlights, use_query_signal, Buffer, Language, Range, Span,
 };
 use dioxus::prelude::{to_owned, use_context_provider, use_effect, Scope};
 use dioxus_lazy::{factory, Direction, UseList};

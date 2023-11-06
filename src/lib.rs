@@ -13,7 +13,7 @@ mod span;
 pub use span::Span;
 
 mod use_query;
-pub use use_query::use_query;
+pub use use_query::use_query_signal;
 
 pub use tree_sitter_c2rust::Point;
 

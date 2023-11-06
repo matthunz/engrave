@@ -1,11 +1,12 @@
-use crate::Span;
+use crate::{
+    use_query::{use_language, use_query},
+    Span,
+};
 use dioxus::prelude::Scope;
 use dioxus_signals::{use_signal, Signal};
 use ropey::{Rope, RopeSlice};
 use std::mem;
-use tree_sitter_c2rust::{
-    InputEdit, Language, Node, Parser, Point, Query, QueryCursor, Range, TextProvider, Tree,
-};
+use tree_sitter_c2rust::{InputEdit, Language, Node, Parser, Point, Range, TextProvider, Tree};
 
 pub fn use_buffer<'a, T>(
     cx: Scope<T>,
@@ -13,6 +14,24 @@ pub fn use_buffer<'a, T>(
     make_text: impl FnOnce() -> &'a str,
 ) -> Signal<Buffer> {
     use_signal(cx, || Buffer::new(language, make_text()))
+}
+
+pub fn use_highlights<T>(cx: Scope<T>, buffer: Signal<Buffer>) -> Signal<Vec<Item>> {
+    let language = use_language(cx);
+    let highlights = use_signal(cx, || Vec::new());
+    use_query(cx, language().highlight_query, buffer, move |matches| {
+        let items = matches
+            .flat_map(|mat| {
+                mat.captures.iter().map(|capture| {
+                    let range = capture.node.range();
+                    let kind = capture.node.kind().to_owned();
+                    Item { range, kind }
+                })
+            })
+            .collect();
+        highlights.set(items);
+    });
+    highlights
 }
 
 #[derive(Debug)]
@@ -24,7 +43,7 @@ pub struct Item {
 pub struct Buffer {
     pub rope: Rope,
     parser: Parser,
-    tree: Tree,
+    pub tree: Tree,
 }
 
 impl Buffer {
@@ -128,27 +147,6 @@ impl Buffer {
             })
             .collect()
     }
-
-    pub fn highlights(&self, query: &Query) -> Vec<Item> {
-        let mut query_cursor = QueryCursor::new();
-        let rope = &self.rope;
-        let matches = query_cursor.matches(
-            query,
-            self.tree.root_node(),
-            RopeProvider {
-                slice: rope.slice(..),
-            },
-        );
-        matches
-            .flat_map(|mat| {
-                mat.captures.iter().map(|capture| {
-                    let range = capture.node.range();
-                    let kind = capture.node.kind().to_owned();
-                    Item { range, kind }
-                })
-            })
-            .collect()
-    }
 }
 
 pub struct Iter<'a> {
@@ -163,7 +161,7 @@ impl<'a> Iterator for Iter<'a> {
 }
 
 pub struct RopeProvider<'a> {
-    slice: RopeSlice<'a>,
+    pub slice: RopeSlice<'a>,
 }
 
 impl<'a> TextProvider<'a> for RopeProvider<'a> {

@@ -1,10 +1,12 @@
-use crate::{language, use_buffer, use_query, Buffer, Language, Range, Span};
+use crate::{
+    buffer::use_highlights, language, use_buffer, use_query_signal, Buffer, Language, Range, Span,
+};
 use dioxus::prelude::{to_owned, use_context_provider, use_effect, Scope};
 use dioxus_lazy::{factory, Direction, UseList};
 use dioxus_resize_observer::{use_resize, Rect};
 use dioxus_signals::{use_signal, Signal, Write};
 use std::cell::Ref;
-use tree_sitter_c2rust::{Point, Query};
+use tree_sitter_c2rust::Query;
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct Builder {
@@ -49,12 +51,11 @@ impl Builder {
 
         let buffer = use_buffer(cx, language.tree_sitter, make_text);
         let is_focused = use_signal(cx, || false);
-        let query = use_query(cx, language.highlight_query);
+        let query = use_query_signal(cx, language.highlight_query);
 
         let selections = use_signal(cx, || Vec::new());
 
-        let highlights = use_signal(cx, || buffer().highlights(&query()));
-        dioxus_signals::use_effect(cx, move || highlights.set(buffer().highlights(&query())));
+        let highlights = use_highlights(cx, buffer);
 
         let list = UseList::builder()
             .direction(Direction::Row)
@@ -135,7 +136,7 @@ impl UseEditor {
     }
 
     pub fn insert(&self, text: &str) {
-        let mut cursor_ref = &mut self.selections.write()[0].start;
+        let cursor_ref = &mut self.selections.write()[0].start;
         self.buffer
             .write()
             .insert(cursor_ref.row, cursor_ref.column, text);

@@ -17,7 +17,7 @@ use xilem::{
 
 use crate::{
     buffer::{Buffer, Highlight},
-    language,
+    color, language,
 };
 
 pub struct Editor {
@@ -44,21 +44,21 @@ impl<T> View<T> for Editor {
 
     fn rebuild(
         &self,
-        cx: &mut xilem::view::Cx,
-        prev: &Self,
-        id: &mut Id,
-        state: &mut Self::State,
-        element: &mut Self::Element,
+        _cx: &mut xilem::view::Cx,
+        _prev: &Self,
+        _id: &mut Id,
+        _state: &mut Self::State,
+        _element: &mut Self::Element,
     ) -> ChangeFlags {
         ChangeFlags::empty()
     }
 
     fn message(
         &self,
-        id_path: &[Id],
-        state: &mut Self::State,
-        message: Box<dyn std::any::Any>,
-        app_state: &mut T,
+        _id_path: &[Id],
+        _state: &mut Self::State,
+        _message: Box<dyn std::any::Any>,
+        _app_state: &mut T,
     ) -> MessageResult<()> {
         MessageResult::Nop
     }
@@ -88,7 +88,7 @@ impl TextWidget {
         }
     }
 
-    pub fn set_text(&mut self, text: Cow<'static, str>) -> ChangeFlags {
+    pub fn set_text(&mut self, _text: Cow<'static, str>) -> ChangeFlags {
         // self.text = text;
         ChangeFlags::LAYOUT | ChangeFlags::PAINT
     }
@@ -163,7 +163,7 @@ impl Widget for TextWidget {
     }
 
     fn accessibility(&mut self, cx: &mut AccessCx) {
-        let mut builder = accesskit::NodeBuilder::new(accesskit::Role::StaticText);
+        let builder = accesskit::NodeBuilder::new(accesskit::Role::StaticText);
         //builder.set_value(self.text.clone());
         cx.push_node(builder);
     }
@@ -185,7 +185,7 @@ pub fn render_text(
             let font_size = run.font_size();
             let font_ref = font.as_ref();
             if let Ok(font_ref) = FontRef::from_index(font_ref.data, font.index()) {
-                let style = glyph_run.style();
+                let _style = glyph_run.style();
                 let vars: [(&str, f32); 0] = [];
                 let mut gp = gcx.new_provider(&font_ref, None, font_size, false, vars);
 
@@ -201,26 +201,7 @@ pub fn render_text(
                         }
                     }
 
-                    let color = match kind {
-                        Some(ref s) => match &**s {
-                            "fn" | "struct" | "pub" | "use" | "let" | "match" | "async"
-                            | "unsafe" | "move" | "|" | "impl" | "mutable_specifier" | "self" => {
-                                Color::rgb(193. / 255., 128. / 255., 138. / 255.)
-                            }
-                            "attribute_item" | "identifier" | "type_identifier" | "!" | "'" => {
-                                Color::rgb(96. / 255., 59. / 255., 179. / 255.)
-                            }
-                            //"primitive_type" | "boolean_identifier" | "::" | "*" => "rgb(5, 80, 174)",
-                            "string_literal" | "integer_literal" => {
-                                Color::rgb(208. / 255., 148. / 255., 208. / 255.)
-                            }
-                            //"{" | "}" => "#076678",
-                            //"(" | ")" | "=>" | "&" => "#faa356",
-                            //";" | "," | "<" | ">" | ":" => "#ccc",
-                            _ => Color::WHITE,
-                        },
-                        _ => Color::WHITE,
-                    };
+                    let color = color(kind.as_deref());
                     let brush = ParleyBrush(Brush::Solid(color));
 
                     if let Some(fragment) = gp.get(glyph.id, Some(&brush.0)) {

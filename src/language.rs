@@ -1,5 +1,3 @@
-
-
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Language {
     pub tree_sitter: tree_sitter::Language,

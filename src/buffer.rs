@@ -1,6 +1,7 @@
 use crate::language::{self, Language};
 use crate::Span;
 use ropey::{Rope, RopeSlice};
+
 use std::mem;
 use tree_sitter::{InputEdit, Node, Parser, Point, Query, QueryCursor, Range, TextProvider, Tree};
 
@@ -119,7 +120,7 @@ impl Buffer {
             .collect()
     }
 
-    pub fn highlights(&self) -> Vec<Highlight>{
+    pub fn highlights(&self) -> Vec<Highlight> {
         let mut query_cursor = QueryCursor::new();
         let query = Query::new(
             language::rust().tree_sitter,
@@ -142,7 +143,6 @@ impl Buffer {
                 })
             })
             .collect()
-        
     }
 }
 

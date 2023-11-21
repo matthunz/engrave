@@ -5,37 +5,9 @@ authors = ["Matt Hunzinger <matthunz2@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
-[features]
-lookbook = ["dep:lookbook"]
-
-[[bin]]
-name = "engrave"
-required-features = ["lookbook"]
-
 [dependencies]
-dioxus = { git = "https://github.com/dioxuslabs/dioxus" }
-dioxus-web = { git = "https://github.com/dioxuslabs/dioxus" }
-dioxus-signals = { git = "https://github.com/dioxuslabs/dioxus" }
-dioxus-resize-observer = { git = "https://github.com/dioxus-community/dioxus-resize-observer" }
-dioxus-use-mounted = { git = "https://github.com/matthunz/dioxus-use-mounted" }
-log = "0.4.19"
-dioxus-logger = "0.4.1"
-console_error_panic_hook = "0.1.7"
-ropey = "1.6.1"
-tree-sitter-c2rust = "0.20.10"
-tree-sitter-rust = { git = "https://github.com/matthunz/tree-sitter-rust" }
-lazy_static = "1.4.0"
-wasm-bindgen = "0.2.87"
-web-sys = { version = "0.3.56", features = ["CanvasRenderingContext2d", "HtmlCanvasElement", "HtmlElement", "TextMetrics"] }
-js-sys = "0.3.65"
-dioxus-lazy = { git = "https://github.com/matthunz/dioxus-lazy", version = "0.1.0" }
-lookbook = { git = "https://github.com/matthunz/lookbook", optional = true }
-
-[profile.release]
-opt-level = "z"
-debug = false
-lto = true
-codegen-units = 1
-panic = "abort"
-strip = true
-incremental = false
+xilem = { git = "https://github.com/linebender/xilem", version = "0.1.0" }
+vello = { git = "https://github.com/linebender/vello", rev = "9d7c4f00d8db420337706771a37937e9025e089c" }
+parley = { git = "https://github.com/dfrg/parley", rev = "2371bf4b702ec91edee2d58ffb2d432539580e1e" }
+accesskit = "0.11"
+tree-sitter = "0.20.10"

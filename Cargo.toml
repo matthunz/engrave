@@ -11,3 +11,5 @@ vello = { git = "https://github.com/linebender/vello", rev = "9d7c4f00d8db420337
 parley = { git = "https://github.com/dfrg/parley", rev = "2371bf4b702ec91edee2d58ffb2d432539580e1e" }
 accesskit = "0.11"
 tree-sitter = "0.20.10"
+ropey = "1.6.1"
+tree-sitter-rust = "0.20.4"

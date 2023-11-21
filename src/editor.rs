@@ -15,6 +15,11 @@ use xilem::{
     Axis, MessageResult,
 };
 
+use crate::{
+    buffer::{Buffer, Highlight},
+    language,
+};
+
 pub struct Editor {
     content: Cow<'static, str>,
 }
@@ -33,7 +38,7 @@ impl<T> View<T> for Editor {
     type Element = TextWidget;
 
     fn build(&self, cx: &mut xilem::view::Cx) -> (Id, Self::State, Self::Element) {
-        let (id, element) = cx.with_new_id(|_| TextWidget::new(self.content.clone()));
+        let (id, element) = cx.with_new_id(|_| TextWidget::new(&self.content));
         (id, (), element)
     }
 
@@ -71,17 +76,20 @@ impl Default for ParleyBrush {
 impl parley::style::Brush for ParleyBrush {}
 
 pub struct TextWidget {
-    text: Cow<'static, str>,
+    buffer: Buffer,
     layout: Option<Layout<ParleyBrush>>,
 }
 
 impl TextWidget {
-    pub fn new(text: Cow<'static, str>) -> TextWidget {
-        TextWidget { text, layout: None }
+    pub fn new(text: &str) -> TextWidget {
+        TextWidget {
+            buffer: Buffer::new(language::rust(), text),
+            layout: None,
+        }
     }
 
     pub fn set_text(&mut self, text: Cow<'static, str>) -> ChangeFlags {
-        self.text = text;
+        // self.text = text;
         ChangeFlags::LAYOUT | ChangeFlags::PAINT
     }
 
@@ -89,7 +97,8 @@ impl TextWidget {
         // Ensure Parley layout is initialised
         if self.layout.is_none() {
             let mut lcx = parley::LayoutContext::new();
-            let mut layout_builder = lcx.ranged_builder(font_cx, &self.text, 1.0);
+            let content = self.buffer.rope.to_string();
+            let mut layout_builder = lcx.ranged_builder(font_cx, &content, 1.0);
             layout_builder.push_default(&parley::style::StyleProperty::Brush(ParleyBrush(
                 Brush::Solid(Color::rgb8(255, 255, 255)),
             )));
@@ -148,20 +157,26 @@ impl Widget for TextWidget {
 
     fn paint(&mut self, _cx: &mut PaintCx, builder: &mut SceneBuilder) {
         if let Some(layout) = &self.layout {
-            render_text(builder, Affine::IDENTITY, layout);
+            let highlights = self.buffer.highlights();
+            render_text(builder, Affine::IDENTITY, layout, &highlights);
         }
     }
 
     fn accessibility(&mut self, cx: &mut AccessCx) {
         let mut builder = accesskit::NodeBuilder::new(accesskit::Role::StaticText);
-        builder.set_value(self.text.clone());
+        //builder.set_value(self.text.clone());
         cx.push_node(builder);
     }
 }
 
-pub fn render_text(builder: &mut SceneBuilder, transform: Affine, layout: &Layout<ParleyBrush>) {
+pub fn render_text(
+    builder: &mut SceneBuilder,
+    transform: Affine,
+    layout: &Layout<ParleyBrush>,
+    highlights: &[Highlight],
+) {
     let mut gcx = GlyphContext::new();
-    for line in layout.lines() {
+    for (line_idx, line) in layout.lines().enumerate() {
         for glyph_run in line.glyph_runs() {
             let mut x = glyph_run.offset();
             let y = glyph_run.baseline();
@@ -173,12 +188,42 @@ pub fn render_text(builder: &mut SceneBuilder, transform: Affine, layout: &Layou
                 let style = glyph_run.style();
                 let vars: [(&str, f32); 0] = [];
                 let mut gp = gcx.new_provider(&font_ref, None, font_size, false, vars);
-                let mut brushes = [
-                    ParleyBrush(Brush::Solid(Color::rgb(0., 1., 0.))),
-                    ParleyBrush(Brush::Solid(Color::rgb(1., 0., 0.))),
-                ];
+
                 for (idx, glyph) in glyph_run.glyphs().enumerate() {
-                    if let Some(fragment) = gp.get(glyph.id, Some(&brushes[idx & 1].0)) {
+                    let mut kind = None;
+                    for highlight in highlights {
+                        if line_idx == highlight.range.start_point.row
+                            && idx >= highlight.range.start_point.column
+                            && idx <= highlight.range.end_point.column
+                        {
+                            dbg!(line_idx, &highlight);
+                            kind = Some(highlight.kind.clone());
+                        }
+                    }
+
+                    let color = match kind {
+                        Some(ref s) => match &**s {
+                            "fn" | "struct" | "pub" | "use" | "let" | "match" | "async"
+                            | "unsafe" | "move" | "|" | "impl" | "mutable_specifier" | "self" => {
+                                Color::rgb(193. / 255., 128. / 255., 138. / 255.)
+                            }
+                            "attribute_item" | "identifier" | "type_identifier" | "!" | "'" => {
+                                Color::rgb(96. / 255., 59. / 255., 179. / 255.)
+                            }
+                            //"primitive_type" | "boolean_identifier" | "::" | "*" => "rgb(5, 80, 174)",
+                            "string_literal" | "integer_literal" => {
+                                Color::rgb(208. / 255., 148. / 255., 208. / 255.)
+                            }
+                            //"{" | "}" => "#076678",
+                            //"(" | ")" | "=>" | "&" => "#faa356",
+                            //";" | "," | "<" | ">" | ":" => "#ccc",
+                            _ => Color::WHITE,
+                        },
+                        _ => Color::WHITE,
+                    };
+                    let brush = ParleyBrush(Brush::Solid(color));
+
+                    if let Some(fragment) = gp.get(glyph.id, Some(&brush.0)) {
                         let gx = x + glyph.x;
                         let gy = y - glyph.y;
                         let xform = Affine::translate((gx as f64, gy as f64))

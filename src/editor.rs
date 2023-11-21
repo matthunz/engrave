@@ -1,9 +1,15 @@
+use crate::{
+    buffer::{Buffer, Highlight},
+    color, language,
+};
+
 use parley::{FontContext, Layout};
 use std::borrow::Cow;
+use tree_sitter::Point;
 use vello::{
     glyph::{fello::raw::FontRef, GlyphContext},
-    kurbo::{Affine, Size},
-    peniko::{Brush, Color},
+    kurbo::{Affine, Rect, Size},
+    peniko::{Brush, Color, Fill},
     SceneBuilder,
 };
 use xilem::{
@@ -13,11 +19,6 @@ use xilem::{
         PaintCx, UpdateCx, Widget,
     },
     Axis, MessageResult,
-};
-
-use crate::{
-    buffer::{Buffer, Highlight},
-    color, language,
 };
 
 pub struct Editor {
@@ -78,6 +79,7 @@ impl parley::style::Brush for ParleyBrush {}
 pub struct TextWidget {
     buffer: Buffer,
     layout: Option<Layout<ParleyBrush>>,
+    cursor: Option<(kurbo::Point, Point)>,
 }
 
 impl TextWidget {
@@ -85,6 +87,7 @@ impl TextWidget {
         TextWidget {
             buffer: Buffer::new(language::rust(), text),
             layout: None,
+            cursor: None,
         }
     }
 
@@ -99,6 +102,7 @@ impl TextWidget {
             let mut lcx = parley::LayoutContext::new();
             let content = self.buffer.rope.to_string();
             let mut layout_builder = lcx.ranged_builder(font_cx, &content, 1.0);
+            layout_builder.push_default(&parley::style::StyleProperty::FontSize(24.));
             layout_builder.push_default(&parley::style::StyleProperty::Brush(ParleyBrush(
                 Brush::Solid(Color::rgb8(255, 255, 255)),
             )));
@@ -130,8 +134,34 @@ impl TextWidget {
 }
 
 impl Widget for TextWidget {
-    fn event(&mut self, _cx: &mut EventCx, event: &Event) {
-        dbg!(event);
+    fn event(&mut self, cx: &mut EventCx, event: &Event) {
+        match event {
+            Event::MouseDown(mouse_event) => {
+                let mut target = None;
+                if let Some(ref layout) = self.layout {
+                    for (line_idx, line) in layout.lines().enumerate() {
+                        for run in line.glyph_runs() {
+                            for (glyph_idx, glyph) in run.positioned_glyphs().enumerate() {
+                                if mouse_event.pos.x >= glyph.x as _
+                                    && mouse_event.pos.y + 24. >= glyph.y as _
+                                {
+                                    target = Some((
+                                        kurbo::Point::new(glyph.x as _, glyph.y as _),
+                                        Point::new(line_idx, glyph_idx),
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                }
+                if let Some(target) = target {
+                    dbg!(target);
+                    self.cursor = Some(target);
+                    cx.request_paint();
+                }
+            }
+            _ => {}
+        }
     }
 
     fn lifecycle(&mut self, _cx: &mut LifeCycleCx, _event: &LifeCycle) {}
@@ -156,6 +186,16 @@ impl Widget for TextWidget {
     }
 
     fn paint(&mut self, _cx: &mut PaintCx, builder: &mut SceneBuilder) {
+        if let Some((pos, _point)) = self.cursor {
+            builder.fill(
+                Fill::EvenOdd,
+                Affine::translate((pos.x, pos.y - 24.)),
+                &Brush::Solid(Color::rgb(1., 0., 0.)),
+                None,
+                &Rect::new(0., 0., 2., 24.),
+            );
+        }
+
         if let Some(layout) = &self.layout {
             let highlights = self.buffer.highlights();
             render_text(builder, Affine::IDENTITY, layout, &highlights);
@@ -196,7 +236,6 @@ pub fn render_text(
                             && idx >= highlight.range.start_point.column
                             && idx <= highlight.range.end_point.column
                         {
-                            dbg!(line_idx, &highlight);
                             kind = Some(highlight.kind.clone());
                         }
                     }

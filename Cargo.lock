@@ -716,6 +716,7 @@ name = "engrave"
 version = "0.1.0"
 dependencies = [
  "accesskit",
+ "kurbo 0.10.4",
  "parley",
  "ropey",
  "tree-sitter",
@@ -1062,7 +1063,7 @@ dependencies = [
  "instant",
  "js-sys",
  "keyboard-types",
- "kurbo",
+ "kurbo 0.9.5",
  "lazy_static",
  "memchr",
  "nix 0.25.1",
@@ -1318,6 +1319,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd85a5776cd9500c2e2059c8c76c3b01528566b7fcbaf8098b55a33fc298849b"
 dependencies = [
  "arrayvec",
+]
+
+[[package]]
+name = "kurbo"
+version = "0.10.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1618d4ebd923e97d67e7cd363d80aef35fe961005cbbbb3d2dad8bdd1bc63440"
+dependencies = [
+ "arrayvec",
+ "smallvec",
 ]
 
 [[package]]
@@ -1672,7 +1683,7 @@ name = "peniko"
 version = "0.1.0"
 source = "git+https://github.com/linebender/peniko?rev=cafdac9a211a0fb2fec5656bd663d1ac770bcc81#cafdac9a211a0fb2fec5656bd663d1ac770bcc81"
 dependencies = [
- "kurbo",
+ "kurbo 0.9.5",
  "smallvec",
 ]
 
